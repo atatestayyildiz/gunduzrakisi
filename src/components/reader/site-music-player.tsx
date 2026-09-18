@@ -10,6 +10,7 @@ interface SiteMusicPlayerProps {
   showAddMusic?: boolean;
   onOpenAddMusic?: () => void;
   refreshTrigger?: number;
+  isDrawerOpen?: boolean;
 }
 
 export function SiteMusicPlayer({
@@ -17,10 +18,19 @@ export function SiteMusicPlayer({
   showAddMusic = false,
   onOpenAddMusic,
   refreshTrigger = 0,
+  isDrawerOpen = false,
 }: SiteMusicPlayerProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const isDrawerOpenRef = React.useRef(isDrawerOpen);
+
+  useEffect(() => {
+    isDrawerOpenRef.current = isDrawerOpen;
+    if (isDrawerOpen) {
+      setIsOpen(false);
+    }
+  }, [isDrawerOpen]);
 
   useEffect(() => {
     setMounted(true);
@@ -65,7 +75,11 @@ export function SiteMusicPlayer({
       setTracks(list);
 
       if (list.length > 0) {
-        setTimeout(() => setIsOpen(true), 900);
+        setTimeout(() => {
+          if (!isDrawerOpenRef.current) {
+            setIsOpen(true);
+          }
+        }, 900);
       }
     }
     loadTracks();

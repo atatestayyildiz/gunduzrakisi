@@ -1026,6 +1026,7 @@ export default function WriterPage() {
         showAddMusic={true}
         onOpenAddMusic={() => setIsAddMusicOpen(true)}
         refreshTrigger={musicRefreshTrigger}
+        isDrawerOpen={isDrawerOpen}
       />
 
       {/* Add / Manage Music Modal */}

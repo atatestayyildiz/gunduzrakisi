@@ -157,13 +157,13 @@ export const BookDrawer = ({
       {isOpen && (
         <div
           onClick={onToggle}
-          className="fixed inset-0 bg-black/45 backdrop-blur-2xs z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-black/45 backdrop-blur-2xs z-[60] transition-opacity duration-300"
         />
       )}
 
       {/* Unified Sliding Drawer Assembly: Kulp ve çekmece gövdesi tek bir fiziksel parça olarak kayar */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-[440px] z-50 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed top-0 right-0 h-full w-full max-w-[440px] z-[70] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

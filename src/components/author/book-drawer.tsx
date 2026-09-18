@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Book } from "@/components/ui/book";
 import { CategoryItem } from "@/lib/types";
 import { convertToWebP } from "@/lib/image-utils";
+import { MusicTrackSelect } from "./music-track-select";
 import {
   X,
   Sliders,
@@ -699,58 +700,25 @@ export const BookDrawer = ({
               )}
             </div>
 
-            {/* Kayıtlı Şarkılar Arasından Tek Seçim Alanı */}
-            <select
-              value={musicUrl || ""}
-              onChange={(e) => {
-                const selectedUrl = e.target.value;
-                if (!selectedUrl) {
+            {/* Kayıtlı Şarkılar Arasından Arama & Seçim Alanı */}
+            <MusicTrackSelect
+              tracks={musicTracks}
+              selectedUrl={musicUrl || ""}
+              onSelect={(track) => {
+                if (track) {
+                  onMusicUrlChange(track.url);
+                  onMusicTitleChange(track.title);
+                  onMusicArtistChange(track.artist || "Mert Kip");
+                  onMusicCoverChange(track.cover || "");
+                } else {
                   onMusicUrlChange("");
                   onMusicTitleChange("");
                   onMusicArtistChange("");
                   onMusicCoverChange("");
-                  return;
-                }
-                const found = musicTracks.find((t) => t.url === selectedUrl);
-                if (found) {
-                  onMusicUrlChange(found.url);
-                  onMusicTitleChange(found.title);
-                  onMusicArtistChange(found.artist || "Mert Kip");
-                  onMusicCoverChange(found.cover || "");
-                } else {
-                  onMusicUrlChange(selectedUrl);
                 }
               }}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs font-serif text-[#3b200b] focus:outline-hidden focus:ring-2 focus:ring-amber-800/40 cursor-pointer"
-            >
-              <option value="">Şarkı Seçilmedi (Sessiz Okuma)</option>
-              {musicTracks.map((t) => (
-                <option key={t.id} value={t.url}>
-                  {t.title} {t.artist ? `— ${t.artist}` : ""}
-                </option>
-              ))}
-            </select>
-
-            {musicTitle && (
-              <div className="flex items-center justify-between p-2 rounded-lg bg-white/60 border border-[#d8c7b4] text-[11px] font-serif text-[#4a2b13]">
-                <div className="truncate pr-2">
-                  <span className="font-bold">{musicTitle}</span>
-                  {musicArtist && <span className="opacity-80"> — {musicArtist}</span>}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onMusicUrlChange("");
-                    onMusicTitleChange("");
-                    onMusicArtistChange("");
-                    onMusicCoverChange("");
-                  }}
-                  className="text-rose-800 hover:text-rose-950 underline shrink-0 cursor-pointer"
-                >
-                  Kaldır
-                </button>
-              </div>
-            )}
+              onOpenAddMusic={onOpenAddMusic}
+            />
           </div>
         </div>
 

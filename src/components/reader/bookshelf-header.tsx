@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { CategoryItem } from "@/lib/types";
-import { ChevronDown, Check, BookMarked } from "lucide-react";
+import { ChevronDown, Check, BookMarked, Feather } from "lucide-react";
 
 interface BookshelfHeaderProps {
   categories: CategoryItem[];
@@ -18,7 +19,15 @@ export const BookshelfHeader = ({
   totalBooks,
 }: BookshelfHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthorAuthenticated, setIsAuthorAuthenticated] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem("gunduz_rakisi_author_auth");
+      setIsAuthorAuthenticated(auth === "granted");
+    }
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -89,6 +98,19 @@ export const BookshelfHeader = ({
               </p>
             </div>
 
+            {/* If author is authenticated, show direct return button to Yazar Odası */}
+            {isAuthorAuthenticated && (
+              <div className="flex items-center">
+                <Link
+                  href="/yazar"
+                  className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#42220d] to-[#2b1406] hover:from-[#572d11] hover:to-[#381a07] border border-[#d4af37]/60 hover:border-[#d4af37] text-amber-200 hover:text-amber-100 text-xs font-serif font-semibold shadow-lg transition-all cursor-pointer backdrop-blur-xs active:scale-[0.98]"
+                  title="Yazar Odasına Dön"
+                >
+                  <Feather className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                  <span>Yazar Odasına Dön</span>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Categories Dropdown & Shelf Stats */}

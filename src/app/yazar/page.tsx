@@ -493,7 +493,7 @@ export default function WriterPage() {
             Gündüz Rakısı
           </h1>
           <p className="font-serif italic text-amber-400/80 text-xs tracking-widest uppercase mb-5">
-            Mert Kip — Yazar Odası
+            Mert Kip | Yazar Odası
           </p>
 
           <p className="font-serif text-xs sm:text-sm text-[#e8cfb3]/85 leading-relaxed mb-6 px-2">
@@ -549,7 +549,7 @@ export default function WriterPage() {
 
       {/* Top Bar / Navigation (Sabit Başlık) */}
       <header className="shrink-0 z-30 bg-[#f7f3eb]/85 backdrop-blur-md border-b border-[#ddcfbd] px-4 sm:px-8 py-3.5 shadow-xs">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto relative flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/"
@@ -561,7 +561,7 @@ export default function WriterPage() {
             <span className="text-neutral-400">|</span>
             <div className="flex items-center gap-1.5 font-serif font-bold text-amber-950 text-sm">
               <Feather className="w-4 h-4 text-amber-700" />
-              <span>Mert Kip — Yazar Odası</span>
+              <span>Mert Kip | Yazar Odası</span>
             </div>
             <button
               onClick={handleLogout}
@@ -573,8 +573,8 @@ export default function WriterPage() {
             </button>
           </div>
 
-          {/* Tab Switcher */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#e8ded0] border border-[#d2c0aa]">
+          {/* Tab Switcher — Kesin Ortalanmış (Sabit Konum) */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 rounded-xl bg-[#e8ded0] border border-[#d2c0aa]">
             <button
               onClick={() => setActiveTab("write")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-serif font-medium transition-all cursor-pointer ${
@@ -611,29 +611,31 @@ export default function WriterPage() {
           </div>
 
           {/* Action Buttons in Top Bar */}
-          {activeTab === "write" && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleSaveAsDraft}
-                disabled={isSaving}
-                title="Yazınızı taslak olarak saklayın, daha sonra devam edin"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#e8ded0] hover:bg-[#d8c8b4] text-[#4a2e17] font-serif font-semibold text-xs transition-all border border-[#d2c0aa] cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-3.5 h-3.5 text-amber-800" />
-                <span>Taslak Kaydet</span>
-              </button>
+          <div className="flex items-center gap-2">
+            {activeTab === "write" && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveAsDraft}
+                  disabled={isSaving}
+                  title="Yazınızı taslak olarak saklayın, daha sonra devam edin"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#e8ded0] hover:bg-[#d8c8b4] text-[#4a2e17] font-serif font-semibold text-xs transition-all border border-[#d2c0aa] cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5 text-amber-800" />
+                  <span>Taslak Kaydet</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setIsDrawerOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#4a2810] hover:bg-[#613617] text-[#fcebdc] font-serif font-semibold text-xs transition-all shadow-md border border-[#c48d5d]/40 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Ciltle & Rafa Koy</span>
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={() => setIsDrawerOpen(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#4a2810] hover:bg-[#613617] text-[#fcebdc] font-serif font-semibold text-xs transition-all shadow-md border border-[#c48d5d]/40 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Ciltle & Rafa Koy</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -673,9 +675,6 @@ export default function WriterPage() {
             <div className="relative">
             {/* Pastoral Header Banner */}
             <div className="text-center mb-8">
-              <span className="text-xs font-serif tracking-widest uppercase text-amber-900/70 font-semibold">
-                Sessizlik, Bozkır ve Kağıt
-              </span>
               <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#321d0d] mt-1">
                 {editingId ? "Denemeyi Düzenle" : "Yeni Bir Deneme Başlat"}
               </h1>

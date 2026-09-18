@@ -124,10 +124,10 @@ export const BookDrawer = ({
     if (!file) return;
     try {
       setIsCompressing(true);
-      setCompressionInfo("WebP'ye dönüştürülüyor ve sıkıştırılıyor...");
+      setCompressionInfo("Görsel optimize ediliyor...");
       const res = await convertToWebP(file, 800, 1200, 0.82);
       onCoverImageChange(res.dataUrl);
-      setCompressionInfo(`WebP: ~${res.sizeKB} KB (Orijinal: ${res.originalSizeKB} KB)`);
+      setCompressionInfo(`Boyut: ~${res.sizeKB} KB (Orijinal: ${res.originalSizeKB} KB)`);
     } catch (err) {
       console.error("Görsel dönüştürme hatası:", err);
       alert("Görsel işlenirken bir hata oluştu.");
@@ -227,9 +227,6 @@ export const BookDrawer = ({
                 <h2 className="font-serif font-bold text-base sm:text-lg text-amber-100 tracking-wide">
                   Cilt & Raf Çekmecesi
                 </h2>
-                <p className="text-[11px] font-serif italic text-amber-200/70">
-                  Masif meşe ağacı cilt sandığı
-                </p>
               </div>
             </div>
             <button
@@ -383,11 +380,11 @@ export const BookDrawer = ({
             </div>
           </div>
 
-          {/* Kapak Görseli (Otomatik WebP Optimizasyonu) */}
+          {/* Kapak Görseli */}
           <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-serif font-semibold text-[#4a2b13]">
-                Kapak Görseli (Otomatik WebP)
+                Kapak Görseli
               </label>
               <span className="text-[11px] font-serif text-amber-900/60">
                 {coverImage ? "Seçildi" : "Opsiyonel"}
@@ -446,18 +443,15 @@ export const BookDrawer = ({
                   {isCompressing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-amber-800" />
-                      <span>WebP Formatına Sıkıştırılıyor...</span>
+                      <span>Görsel Yükleniyor...</span>
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4 text-amber-800" />
-                      <span>Cihazdan Kapak Görseli Yükle (WebP)</span>
+                      <span>Cihazdan Kapak Görseli Yükle</span>
                     </>
                   )}
                 </button>
-                <p className="text-[10px] font-serif italic text-[#80644d] text-center mt-1.5">
-                  Fotoğraflar otomatik olarak ölçeklenir ve hafif WebP formatına çevrilir.
-                </p>
               </div>
             )}
 
@@ -465,7 +459,7 @@ export const BookDrawer = ({
             <div className="pt-1 border-t border-[#e2d1bd]">
               <input
                 type="text"
-                placeholder="veya direkt görsel URL'si yapıştırın (https://...)"
+                placeholder="Görsel bağlantısı (URL)"
                 value={coverImage && !coverImage.startsWith("data:") ? coverImage : ""}
                 onChange={(e) => {
                   onCoverImageChange(e.target.value);
@@ -481,21 +475,19 @@ export const BookDrawer = ({
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <FolderPlus className="w-4 h-4 text-amber-800" />
-                <span>Kategori</span>
+                <span>Raf / Kategori</span>
               </label>
 
-              <div className="flex items-center gap-2 text-[11px] font-serif">
+              <div className="flex items-center gap-1.5 text-xs font-serif">
                 <button
                   type="button"
                   onClick={() => {
                     setShowManageCategories(!showManageCategories);
                     setShowNewCatInput(false);
                   }}
-                  className={`underline cursor-pointer transition-colors ${
-                    showManageCategories ? "text-amber-950 font-bold" : "text-amber-800 hover:text-amber-950"
-                  }`}
+                  className="text-amber-800 underline hover:text-amber-950 cursor-pointer"
                 >
-                  {showManageCategories ? "Tamamla" : "Düzenle / Sil"}
+                  {showManageCategories ? "Kapat" : "Yönet"}
                 </button>
                 <span className="text-amber-900/30">|</span>
                 <button
@@ -516,7 +508,7 @@ export const BookDrawer = ({
               <div className="flex gap-2 p-2 rounded-xl bg-amber-900/5 border border-[#d8c7b4]">
                 <input
                   type="text"
-                  placeholder="Yeni kategori adı..."
+                  placeholder="Kategori adı"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
                   className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs focus:outline-hidden focus:ring-1 focus:ring-amber-800"
@@ -629,7 +621,7 @@ export const BookDrawer = ({
             </select>
           </div>
 
-          {/* Yazı Tarihi (Blogspot ve Geçmiş Yazılar için) */}
+          {/* Yazı Tarihi */}
           <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
@@ -656,7 +648,7 @@ export const BookDrawer = ({
             <div className="flex gap-2 items-center">
               <input
                 type="text"
-                placeholder="Örn: 14 Eylül 2012"
+                placeholder="Tarih"
                 value={date}
                 onChange={(e) => onDateChange?.(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs font-serif focus:outline-hidden focus:ring-2 focus:ring-amber-800/40"
@@ -680,9 +672,6 @@ export const BookDrawer = ({
                 className="w-9 h-9 p-1 rounded-xl bg-white border border-[#d8c7b4] text-xs cursor-pointer text-amber-900"
               />
             </div>
-            <p className="text-[10px] font-serif italic text-amber-900/70">
-              Blogspot veya arşiv yazılarınız için dilediğiniz geçmiş tarihi yazabilir veya takvimden seçebilirsiniz.
-            </p>
           </div>
 
           {/* Müzik Eşlikçisi (Opsiyonel) */}
@@ -694,33 +683,33 @@ export const BookDrawer = ({
             <div className="space-y-2">
               <input
                 type="text"
-                placeholder="Şarkı Adı (örn: Balıkesir)"
+                placeholder="Şarkı Adı"
                 value={musicTitle}
                 onChange={(e) => onMusicTitleChange(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
               />
               <input
                 type="text"
-                placeholder="Sanatçı (örn: Birsen Tezer)"
+                placeholder="Sanatçı"
                 value={musicArtist}
                 onChange={(e) => onMusicArtistChange(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
               />
               <input
                 type="text"
-                placeholder="YouTube linki (youtube.com/watch?v=... veya youtu.be/...)"
+                placeholder="YouTube bağlantısı (URL)"
                 value={musicUrl}
                 onChange={(e) => onMusicUrlChange(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
               />
               <input
                 type="text"
-                placeholder="Albüm Kapağı URL (opsiyonel — boşsa YouTube'dan otomatik alınır)"
+                placeholder="Albüm Kapağı (URL)"
                 value={musicCover}
                 onChange={(e) => onMusicCoverChange(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
               />
-              <p className="text-[10px] font-serif italic text-amber-900/60">
+              <p className="text-[11px] font-serif font-medium text-[#2d170a] bg-amber-200/40 p-2 rounded-lg border border-amber-800/20 leading-relaxed">
                 YouTube Music linkini de kullanabilirsiniz. Kapak görseli belirtilmezse YouTube&apos;un küçük resmi otomatik kullanılır.
               </p>
             </div>

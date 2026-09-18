@@ -15,7 +15,8 @@ import {
   Clock,
   Wine,
   Share2,
-  Check
+  Check,
+  Feather
 } from "lucide-react";
 
 interface PageProps {
@@ -28,6 +29,14 @@ export default function ArticlePage({ params }: PageProps) {
   const [article, setArticle] = useState<BookArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isAuthorAuthenticated, setIsAuthorAuthenticated] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem("gunduz_rakisi_author_auth");
+      setIsAuthorAuthenticated(auth === "granted");
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -98,6 +107,17 @@ export default function ArticlePage({ params }: PageProps) {
           </Link>
 
           <div className="flex items-center gap-2">
+            {isAuthorAuthenticated && (
+              <Link
+                href="/yazar"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3e220e] hover:bg-[#522e14] text-amber-200 hover:text-white text-xs font-medium transition-colors cursor-pointer shadow-xs border border-amber-500/30"
+                title="Yazar Odasına Dön"
+              >
+                <Feather className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-serif">Yazar Odası</span>
+              </Link>
+            )}
+
             <button
               onClick={handleShare}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e7ded1] hover:bg-[#ded1c0] text-xs font-medium text-[#4a2e17] transition-colors cursor-pointer"

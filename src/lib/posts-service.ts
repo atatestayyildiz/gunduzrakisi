@@ -10,11 +10,12 @@ import {
   query,
   orderBy
 } from "firebase/firestore";
-import { BookArticle, CategoryItem } from "./types";
+import { BookArticle, CategoryItem, MusicTrack } from "./types";
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES } from "./initial-data";
 
 const LOCAL_STORAGE_ARTICLES_KEY = "gunduz_rakisi_articles_v5";
 const LOCAL_STORAGE_CATEGORIES_KEY = "gunduz_rakisi_categories_v5";
+const LOCAL_STORAGE_MUSIC_KEY = "gunduz_rakisi_music_tracks_v1";
 
 /**
  * Gets all articles sorted by order.
@@ -190,3 +191,85 @@ export async function deleteCategory(id: string): Promise<void> {
     localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
   }
 }
+
+/**
+ * Gets all saved music tracks.
+ */
+export async function getMusicTracks(): Promise<MusicTrack[]> {
+  // 1. Try Firestore if configured
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(collection(db, "music_tracks"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const list: MusicTrack[] = [];
+        querySnapshot.forEach((d) => {
+          list.push({ ...d.data(), id: d.id } as MusicTrack);
+        });
+        return list;
+      }
+    } catch (err) {
+      console.warn("Firestore music fetch failed, falling back to local storage:", err);
+    }
+  }
+
+  // 2. Try LocalStorage
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_MUSIC_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn("Music read error:", e);
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Saves a new or updated music track.
+ */
+export async function saveMusicTrack(track: MusicTrack): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, "music_tracks", track.id), track);
+    } catch (err) {
+      console.error("Firestore music track save error:", err);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    const tracks = await getMusicTracks();
+    const index = tracks.findIndex((t) => t.id === track.id);
+    let updated: MusicTrack[];
+    if (index >= 0) {
+      updated = [...tracks];
+      updated[index] = track;
+    } else {
+      updated = [track, ...tracks];
+    }
+    localStorage.setItem(LOCAL_STORAGE_MUSIC_KEY, JSON.stringify(updated));
+  }
+}
+
+/**
+ * Deletes a music track by id.
+ */
+export async function deleteMusicTrack(id: string): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await deleteDoc(doc(db, "music_tracks", id));
+    } catch (err) {
+      console.error("Firestore music delete error:", err);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    const tracks = await getMusicTracks();
+    const updated = tracks.filter((t) => t.id !== id);
+    localStorage.setItem(LOCAL_STORAGE_MUSIC_KEY, JSON.stringify(updated));
+  }
+}
+

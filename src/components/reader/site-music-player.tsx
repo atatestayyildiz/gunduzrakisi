@@ -2,14 +2,22 @@
 
 import React, { useEffect, useState } from "react";
 import { MusicPlayerWidget, extractYouTubeId, type Track } from "@/components/ui/music-player-widget";
-import { getArticles } from "@/lib/posts-service";
-import { Music, ChevronDown, ChevronUp } from "lucide-react";
+import { getArticles, getMusicTracks } from "@/lib/posts-service";
+import { Music, ChevronDown, ChevronUp, Plus } from "lucide-react";
 
 interface SiteMusicPlayerProps {
   currentArticleId?: string;
+  showAddMusic?: boolean;
+  onOpenAddMusic?: () => void;
+  refreshTrigger?: number;
 }
 
-export function SiteMusicPlayer({ currentArticleId }: SiteMusicPlayerProps) {
+export function SiteMusicPlayer({
+  currentArticleId,
+  showAddMusic = false,
+  onOpenAddMusic,
+  refreshTrigger = 0,
+}: SiteMusicPlayerProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -17,37 +25,54 @@ export function SiteMusicPlayer({ currentArticleId }: SiteMusicPlayerProps) {
   useEffect(() => {
     setMounted(true);
     async function loadTracks() {
-      const articles = await getArticles();
+      const [articles, savedTracks] = await Promise.all([
+        getArticles(),
+        getMusicTracks(),
+      ]);
 
-      // Yalnızca yayınlanmış ve geçerli YouTube linki olan yazılar
+      const list: Track[] = [];
+
+      // 1. Yazılara atanmış şarkılar
       const withMusic = articles.filter(
         (a) => !a.isDraft && a.musicUrl && extractYouTubeId(a.musicUrl)
       );
 
-      // Aktif yazının şarkısını başa al
       const current = withMusic.filter((a) => a.id === currentArticleId);
       const rest = withMusic.filter((a) => a.id !== currentArticleId);
-      const sorted = [...current, ...rest];
+      const sortedArticles = [...current, ...rest];
 
-      const list: Track[] = sorted.map((a) => ({
-        title: a.musicTitle || a.title,
-        artist: a.musicArtist || "Mert Kip",
-        cover: a.musicCover || "",
-        src: a.musicUrl!,
-      }));
+      sortedArticles.forEach((a) => {
+        list.push({
+          title: a.musicTitle || a.title,
+          artist: a.musicArtist || "Mert Kip",
+          cover: a.musicCover || "",
+          src: a.musicUrl!,
+        });
+      });
+
+      // 2. Müzik Sandığına kaydedilmiş genel şarkılar (eğer listede henüz yoksa ekle)
+      savedTracks.forEach((st) => {
+        if (!list.some((item) => item.src === st.url)) {
+          list.push({
+            title: st.title,
+            artist: st.artist,
+            cover: st.cover || "",
+            src: st.url,
+          });
+        }
+      });
 
       setTracks(list);
 
       if (list.length > 0) {
-        // İlk girişte 900ms sonra aç
         setTimeout(() => setIsOpen(true), 900);
       }
     }
     loadTracks();
-  }, [currentArticleId]);
+  }, [currentArticleId, refreshTrigger]);
 
-  // Müzik linki yoksa hiçbir şey render etme
-  if (!mounted || tracks.length === 0) return null;
+  // Müzik linki yoksa ve şarkı ekleme yetkisi yoksa hiçbir şey render etme
+  if (!mounted || (tracks.length === 0 && !showAddMusic)) return null;
 
   return (
     <div
@@ -75,7 +100,24 @@ export function SiteMusicPlayer({ currentArticleId }: SiteMusicPlayerProps) {
         />
 
         {/* Oynatıcı kartı */}
-        <MusicPlayerWidget tracks={tracks} />
+        {tracks.length > 0 && <MusicPlayerWidget tracks={tracks} />}
+
+        {/* Yazar Odasına Özel "Şarkı Ekle / Yönet" Barı */}
+        {showAddMusic && onOpenAddMusic && (
+          <div className="px-3 py-2 bg-[#1a0b03]/90 border-t border-[#ffd9a3]/15 flex items-center justify-between">
+            <span className="text-[11px] font-serif text-amber-200/70 italic">
+              {tracks.length} Şarkı Kayıtlı
+            </span>
+            <button
+              type="button"
+              onClick={onOpenAddMusic}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#4d2810] to-[#3a1d0a] hover:from-[#613314] hover:to-[#4a250d] text-amber-200 text-xs font-serif font-semibold border border-amber-600/40 hover:border-amber-400 shadow-xs cursor-pointer transition-all active:scale-[0.98]"
+            >
+              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <span>Şarkı Ekle</span>
+            </button>
+          </div>
+        )}
 
         {/* Kulakçık — tam kart genişliğinde açılır/kapanır tab (36px yükseklik) */}
         <button

@@ -49,7 +49,6 @@ interface BookDrawerProps {
   onTexturedChange: (val: boolean) => void;
   coverImage?: string;
   onCoverImageChange: (img: string) => void;
-
   musicTitle: string;
   onMusicTitleChange: (v: string) => void;
   musicArtist: string;
@@ -58,6 +57,8 @@ interface BookDrawerProps {
   onMusicUrlChange: (v: string) => void;
   musicCover: string;
   onMusicCoverChange: (v: string) => void;
+  musicTracks?: import("@/lib/types").MusicTrack[];
+  onOpenAddMusic?: () => void;
   sips: number;
   readTimeMinutes: number;
   onSaveToShelf: () => void;
@@ -106,6 +107,8 @@ export const BookDrawer = ({
   onMusicUrlChange,
   musicCover,
   onMusicCoverChange,
+  musicTracks = [],
+  onOpenAddMusic,
   sips,
   readTimeMinutes,
   onSaveToShelf,
@@ -678,45 +681,76 @@ export const BookDrawer = ({
             </div>
           </div>
 
-          {/* Müzik Eşlikçisi (Opsiyonel) */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
-            <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
-              <Music className="w-4 h-4 text-amber-800" />
-              <span>Yazının Şarkısı (Opsiyonel)</span>
-            </label>
-            <div className="space-y-2">
-              <input
-                type="text"
-                placeholder="Şarkı Adı"
-                value={musicTitle}
-                onChange={(e) => onMusicTitleChange(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
-              />
-              <input
-                type="text"
-                placeholder="Sanatçı"
-                value={musicArtist}
-                onChange={(e) => onMusicArtistChange(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
-              />
-              <input
-                type="text"
-                placeholder="YouTube bağlantısı (URL)"
-                value={musicUrl}
-                onChange={(e) => onMusicUrlChange(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
-              />
-              <input
-                type="text"
-                placeholder="Albüm Kapağı (URL)"
-                value={musicCover}
-                onChange={(e) => onMusicCoverChange(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
-              />
-              <p className="text-[11px] font-serif font-medium text-[#2d170a] bg-amber-200/40 p-2 rounded-lg border border-amber-800/20 leading-relaxed">
-                YouTube Music linkini de kullanabilirsiniz. Kapak görseli belirtilmezse YouTube&apos;un küçük resmi otomatik kullanılır.
-              </p>
+          {/* Müzik Eşlikçisi (Tek Seçim Kutusu) */}
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5 text-xs sm:text-sm">
+                <Music className="w-4 h-4 text-amber-800" />
+                <span>Yazının Şarkısı (Opsiyonel)</span>
+              </label>
+              {onOpenAddMusic && (
+                <button
+                  type="button"
+                  onClick={onOpenAddMusic}
+                  className="text-[11px] font-serif text-amber-800 underline hover:text-amber-950 cursor-pointer"
+                >
+                  + Şarkı Ekle
+                </button>
+              )}
             </div>
+
+            {/* Kayıtlı Şarkılar Arasından Tek Seçim Alanı */}
+            <select
+              value={musicUrl || ""}
+              onChange={(e) => {
+                const selectedUrl = e.target.value;
+                if (!selectedUrl) {
+                  onMusicUrlChange("");
+                  onMusicTitleChange("");
+                  onMusicArtistChange("");
+                  onMusicCoverChange("");
+                  return;
+                }
+                const found = musicTracks.find((t) => t.url === selectedUrl);
+                if (found) {
+                  onMusicUrlChange(found.url);
+                  onMusicTitleChange(found.title);
+                  onMusicArtistChange(found.artist || "Mert Kip");
+                  onMusicCoverChange(found.cover || "");
+                } else {
+                  onMusicUrlChange(selectedUrl);
+                }
+              }}
+              className="w-full px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs font-serif text-[#3b200b] focus:outline-hidden focus:ring-2 focus:ring-amber-800/40 cursor-pointer"
+            >
+              <option value="">Şarkı Seçilmedi (Sessiz Okuma)</option>
+              {musicTracks.map((t) => (
+                <option key={t.id} value={t.url}>
+                  {t.title} {t.artist ? `— ${t.artist}` : ""}
+                </option>
+              ))}
+            </select>
+
+            {musicTitle && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-white/60 border border-[#d8c7b4] text-[11px] font-serif text-[#4a2b13]">
+                <div className="truncate pr-2">
+                  <span className="font-bold">{musicTitle}</span>
+                  {musicArtist && <span className="opacity-80"> — {musicArtist}</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMusicUrlChange("");
+                    onMusicTitleChange("");
+                    onMusicArtistChange("");
+                    onMusicCoverChange("");
+                  }}
+                  className="text-rose-800 hover:text-rose-950 underline shrink-0 cursor-pointer"
+                >
+                  Kaldır
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

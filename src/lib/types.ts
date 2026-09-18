@@ -30,3 +30,13 @@ export interface CategoryItem {
   name: string;
   count?: number;
 }
+
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;      // YouTube URL
+  cover?: string;   // Album cover image URL
+  createdAt?: string;
+}
+

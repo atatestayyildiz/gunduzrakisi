@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookArticle, CategoryItem } from "@/lib/types";
+import { BookArticle, CategoryItem, MusicTrack } from "@/lib/types";
 import {
   getArticles,
   saveArticle,
@@ -12,7 +12,10 @@ import {
   getCategories,
   saveCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  getMusicTracks,
+  saveMusicTrack,
+  deleteMusicTrack,
 } from "@/lib/posts-service";
 import { cleanPastedText, calculateSips } from "@/lib/text-cleaner";
 import { slugify } from "@/lib/slug-utils";
@@ -20,6 +23,8 @@ import { PastoralBackground } from "@/components/author/pastoral-bg";
 import { BookDrawer } from "@/components/author/book-drawer";
 import { ShelfOrganizer } from "@/components/author/shelf-organizer";
 import { DeleteConfirmModal } from "@/components/author/delete-confirm-modal";
+import { AddMusicModal } from "@/components/author/add-music-modal";
+import { SiteMusicPlayer } from "@/components/reader/site-music-player";
 import { EditorToolbar } from "@/components/author/editor-toolbar";
 import { RichEditor } from "@/components/author/rich-editor";
 import { convertToWebP } from "@/lib/image-utils";
@@ -49,9 +54,12 @@ export default function WriterPage() {
   const randomHeightRatio = () =>
     BOOK_HEIGHT_RATIOS[Math.floor(Math.random() * BOOK_HEIGHT_RATIOS.length)];
 
-  // Articles & Categories
+  // Articles & Categories & Music
   const [articles, setArticles] = useState<BookArticle[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
+  const [isAddMusicOpen, setIsAddMusicOpen] = useState(false);
+  const [musicRefreshTrigger, setMusicRefreshTrigger] = useState(0);
 
   // Navigation tab: 'write' | 'drafts' | 'shelves'
   const [activeTab, setActiveTab] = useState<"write" | "drafts" | "shelves">("write");
@@ -173,15 +181,44 @@ export default function WriterPage() {
 
   useEffect(() => {
     async function loadData() {
-      const [art, cat] = await Promise.all([getArticles(), getCategories()]);
+      const [art, cat, mus] = await Promise.all([
+        getArticles(),
+        getCategories(),
+        getMusicTracks(),
+      ]);
       setArticles(art);
       setCategories(cat);
+      setMusicTracks(mus);
       if (cat.length > 1) {
         setCategory(cat[1].id);
       }
     }
     loadData();
-  }, []);
+  }, [musicRefreshTrigger]);
+
+  const handleSaveMusicTrack = async (track: MusicTrack) => {
+    await saveMusicTrack(track);
+    const updated = await getMusicTracks();
+    setMusicTracks(updated);
+    setMusicRefreshTrigger((prev) => prev + 1);
+    setNotice(`"${track.title}" müzik listesine kaydedildi.`);
+    setTimeout(() => setNotice(null), 3000);
+  };
+
+  const handleDeleteMusicTrack = async (id: string) => {
+    await deleteMusicTrack(id);
+    const updated = await getMusicTracks();
+    setMusicTracks(updated);
+    setMusicRefreshTrigger((prev) => prev + 1);
+    if (musicUrl && !updated.some((t) => t.url === musicUrl)) {
+      setMusicUrl("");
+      setMusicTitle("");
+      setMusicArtist("");
+      setMusicCover("");
+    }
+    setNotice("Şarkı müzik listesinden silindi.");
+    setTimeout(() => setNotice(null), 3000);
+  };
 
   // Manual cleanup button
   const handleManualClean = () => {
@@ -976,10 +1013,28 @@ export default function WriterPage() {
         onMusicUrlChange={setMusicUrl}
         musicCover={musicCover}
         onMusicCoverChange={setMusicCover}
+        musicTracks={musicTracks}
+        onOpenAddMusic={() => setIsAddMusicOpen(true)}
         sips={sips}
         readTimeMinutes={readTimeMinutes}
         onSaveToShelf={handleSaveToShelf}
         isSaving={isSaving}
+      />
+
+      {/* Music Player widget in author room with 'Şarkı Ekle' feature */}
+      <SiteMusicPlayer
+        showAddMusic={true}
+        onOpenAddMusic={() => setIsAddMusicOpen(true)}
+        refreshTrigger={musicRefreshTrigger}
+      />
+
+      {/* Add / Manage Music Modal */}
+      <AddMusicModal
+        isOpen={isAddMusicOpen}
+        onClose={() => setIsAddMusicOpen(false)}
+        tracks={musicTracks}
+        onSaveTrack={handleSaveMusicTrack}
+        onDeleteTrack={handleDeleteMusicTrack}
       />
 
       {/* Realistic Antique Typewriter Body & Carriage Anchored along the bottom (Daktilodan çıkan kağıt efekti) */}

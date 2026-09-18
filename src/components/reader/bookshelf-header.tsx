@@ -82,25 +82,35 @@ export const BookshelfHeader = ({
           <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 pointer-events-none" />
           <div className="absolute inset-0 bg-radial-gradient from-amber-500/10 via-transparent to-transparent pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Title & Motto */}
-            <div>
-              <div className="flex items-center gap-3">
+            <div className={isAuthorAuthenticated ? "md:flex-1 text-center md:text-left" : "text-center md:text-left"}>
+              <div className="flex items-center justify-center md:justify-start gap-3">
                 <span className="text-3xl sm:text-4xl font-bold tracking-widest font-serif text-[#faecd8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
                   GÜNDÜZ RAKISI
                 </span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium tracking-widest uppercase bg-[#f5e6d3]/15 text-[#faecd8] px-3 py-0.5 rounded-full border border-[#f5e6d3]/30 shadow-sm backdrop-blur-xs">
-                  Mert Kip
-                </span>
               </div>
               <p className="mt-2 text-sm sm:text-base font-serif italic text-[#e7cfb8] tracking-wide max-w-xl drop-shadow-sm">
-                “Akşama kalmayan sohbetler, ince şeylerin hatırı, Ankara ve bozkır...”
+                “İnce şeylerin hatırı, telaşsız masalar ve bir parça memleket.”
               </p>
             </div>
 
-            {/* If author is authenticated, show direct return button to Yazar Odası */}
+            {/* Yazar Girişi Varsa: Ortalanmış Portre */}
             {isAuthorAuthenticated && (
-              <div className="flex items-center">
+              <div className="shrink-0 flex justify-center">
+                <MertPortrait />
+              </div>
+            )}
+
+            {/* Sağ Alan: Yazar girişi varsa Yazar Odasına Dön butonu, normal kullanıcıda Portre */}
+            <div
+              className={
+                isAuthorAuthenticated
+                  ? "md:flex-1 flex justify-center md:justify-end items-center shrink-0"
+                  : "flex justify-center md:justify-end items-center shrink-0"
+              }
+            >
+              {isAuthorAuthenticated ? (
                 <Link
                   href="/yazar"
                   className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#42220d] to-[#2b1406] hover:from-[#572d11] hover:to-[#381a07] border border-[#d4af37]/60 hover:border-[#d4af37] text-amber-200 hover:text-amber-100 text-xs font-serif font-semibold shadow-lg transition-all cursor-pointer backdrop-blur-xs active:scale-[0.98]"
@@ -109,8 +119,10 @@ export const BookshelfHeader = ({
                   <Feather className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
                   <span>Yazar Odasına Dön</span>
                 </Link>
-              </div>
-            )}
+              ) : (
+                <MertPortrait />
+              )}
+            </div>
           </div>
 
           {/* Categories Dropdown & Shelf Stats */}
@@ -183,3 +195,46 @@ export const BookshelfHeader = ({
     </header>
   );
 };
+
+function MertPortrait() {
+  return (
+    <div className="flex flex-col items-center select-none shrink-0 group">
+      {/* Masif Ahşap & Yaldızlı Çerçeve */}
+      <div
+        className="relative p-1.5 sm:p-2 rounded-full border-2 border-[#1a0c04] shadow-[0_10px_25px_rgba(0,0,0,0.85),inset_0_2px_4px_rgba(255,255,255,0.18)] transition-transform duration-300 group-hover:scale-102"
+        style={{
+          backgroundColor: "#2c1407",
+          backgroundImage: `linear-gradient(145deg, #3d1c0b 0%, #1a0a03 100%), url('/textures/oak_wood.jpg')`,
+          backgroundSize: "180px auto",
+        }}
+      >
+        {/* İç Pirinç Pah / Yaldız Çemberi */}
+        <div className="relative p-0.5 rounded-full border border-[#d4af37]/70 shadow-[inset_0_1px_3px_rgba(0,0,0,0.85),0_0_10px_rgba(212,175,55,0.3)]">
+          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-inner bg-[#140803]">
+            <img
+              src="/textures/mert_kip.jpg"
+              alt="Mert Kip"
+              className="w-full h-full object-cover object-top filter contrast-[1.04] brightness-[0.98] group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Antika Pirinç Metal İsim Levhası (Plaque) */}
+      <div
+        className="-mt-2.5 relative z-10 px-3.5 py-0.5 rounded-xs border border-[#523508] shadow-[0_4px_10px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.5)] flex items-center gap-1.5"
+        style={{
+          background: "linear-gradient(180deg, #dfbc7a 0%, #b88a38 45%, #8f621e 100%)",
+        }}
+      >
+        {/* Sol Vida Başı / Perçin */}
+        <span className="w-1 h-1 rounded-full bg-[#301c06] opacity-85 shadow-[inset_0_0.5px_0.5px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.5)]" />
+        <span className="font-serif font-bold text-[10px] sm:text-[11px] tracking-widest text-[#241004] uppercase drop-shadow-[0_0.5px_0px_rgba(255,255,255,0.35)]">
+          Mert Kip
+        </span>
+        {/* Sağ Vida Başı / Perçin */}
+        <span className="w-1 h-1 rounded-full bg-[#301c06] opacity-85 shadow-[inset_0_0.5px_0.5px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.5)]" />
+      </div>
+    </div>
+  );
+}

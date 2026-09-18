@@ -16,7 +16,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Gündüz Rakısı — Mert Kip",
-  description: "Akşama kalmayan sohbetler, ince şeylerin hatırı, Ankara ve edebiyat. Mert Kip'in deneme kitaplığı.",
+  description: "İnce şeylerin hatırı, telaşsız masalar ve bir parça memleket. Mert Kip'in deneme kitaplığı.",
   icons: {
     icon: "/favicon.ico",
   },

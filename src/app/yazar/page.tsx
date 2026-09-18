@@ -21,6 +21,7 @@ import { BookDrawer } from "@/components/author/book-drawer";
 import { ShelfOrganizer } from "@/components/author/shelf-organizer";
 import { DeleteConfirmModal } from "@/components/author/delete-confirm-modal";
 import { EditorToolbar } from "@/components/author/editor-toolbar";
+import { RichEditor } from "@/components/author/rich-editor";
 import { convertToWebP } from "@/lib/image-utils";
 import {
   ArrowLeft,
@@ -91,7 +92,7 @@ export default function WriterPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [autoCleanNotice, setAutoCleanNotice] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
 
   // Dynamic typewriter platen paper-feed tracking:
@@ -102,13 +103,8 @@ export default function WriterPage() {
   useEffect(() => {
     if (activeTab !== "write") return;
 
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.max(160, textareaRef.current.scrollHeight)}px`;
-    }
-
-    if (mainRef.current && textareaRef.current) {
-      const textarea = textareaRef.current;
+    if (mainRef.current && editorRef.current) {
+      const editor = editorRef.current;
       const main = mainRef.current;
 
       if (!content.trim()) {
@@ -118,13 +114,14 @@ export default function WriterPage() {
       }
 
       const mainRect = main.getBoundingClientRect();
-      const textareaRect = textarea.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
 
       // Platen çizgisi: silindirin hemen üst sınırı (175px)
-      const platenYInMain = (window.innerHeight - 175) - mainRect.top;
+      const platenYInMain = window.innerHeight - 175 - mainRect.top;
 
       // Yazılan metnin en alt noktasının main içerisindeki mutlak konumu:
-      const textBottomAbsY = (textareaRect.top - mainRect.top) + main.scrollTop + textareaRect.height;
+      const textBottomAbsY =
+        editorRect.top - mainRect.top + main.scrollTop + editorRect.height;
 
       if (textBottomAbsY > platenYInMain) {
         const requiredFeed = Math.ceil(textBottomAbsY - platenYInMain);
@@ -137,15 +134,11 @@ export default function WriterPage() {
   }, [content, activeTab]);
 
   // DOM paddingBottom ve overflow-y-auto render edildikten HEMEN SONRA scroll'u senkronize et
-  // (Böylece 12. satıra geçerken gecikme veya silindirin arkasında kalma yaşanmaz):
   useEffect(() => {
-    if (activeTab === "write" && paperFeedScroll > 0 && mainRef.current && textareaRef.current) {
-      const cursor = textareaRef.current.selectionEnd ?? content.length;
-      if (cursor >= content.length - 2) {
-        mainRef.current.scrollTop = paperFeedScroll;
-      }
+    if (activeTab === "write" && paperFeedScroll > 0 && mainRef.current) {
+      mainRef.current.scrollTop = paperFeedScroll;
     }
-  }, [paperFeedScroll, activeTab, content.length]);
+  }, [paperFeedScroll, activeTab]);
 
   useEffect(() => {
     const auth = localStorage.getItem("gunduz_rakisi_author_auth");
@@ -191,34 +184,16 @@ export default function WriterPage() {
     loadData();
   }, []);
 
-  // Handle paste with automatic cleaning for WhatsApp and Word formatting
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const rawText = e.clipboardData.getData("text");
-    if (!rawText) return;
-
-    // Check if it looks like it has WhatsApp or Word artifacts
-    const hasWhatsApp = /\[?\d{1,2}[./-]\d{1,2}[./-]\d{2,4}/.test(rawText);
-    const cleaned = cleanPastedText(rawText);
-
-    if (cleaned !== rawText) {
-      e.preventDefault();
-      // Insert cleaned text at cursor
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newContent =
-        content.substring(0, start) + cleaned + content.substring(end);
-      setContent(newContent);
-
-      setAutoCleanNotice(true);
-      setTimeout(() => setAutoCleanNotice(false), 3500);
-    }
-  };
-
   // Manual cleanup button
   const handleManualClean = () => {
-    const cleaned = cleanPastedText(content);
-    setContent(cleaned);
+    if (editorRef.current) {
+      const raw = editorRef.current.innerText || editorRef.current.textContent || "";
+      const cleaned = cleanPastedText(raw);
+      const paragraphs = cleaned.split(/\r?\n\r?\n/).filter(Boolean);
+      const cleanHtml = paragraphs.map((p) => `<p>${p.replace(/\r?\n/g, "<br>")}</p>`).join("");
+      setContent(cleanHtml);
+      if (editorRef.current) editorRef.current.innerHTML = cleanHtml;
+    }
     setAutoCleanNotice(true);
     setTimeout(() => setAutoCleanNotice(false), 3000);
   };
@@ -234,7 +209,15 @@ export default function WriterPage() {
     try {
       const res = await convertToWebP(file, 900, 1300, 0.82);
       const caption = file.name.replace(/\.[^/.]+$/, "");
-      setContent((prev) => `${prev}\n\n![${caption}](${res.dataUrl})\n\n`);
+      const figureHtml = `<figure class="my-6 text-center"><img src="${res.dataUrl}" alt="${caption}" class="rounded-xl max-w-full max-h-[500px] mx-auto shadow-md border border-[#d8c7b4] object-contain" />${caption ? `<figcaption class="mt-1 text-xs font-serif italic text-[#785b44]">${caption}</figcaption>` : ""}</figure><p><br></p>`;
+      
+      if (editorRef.current) {
+        editorRef.current.focus();
+        document.execCommand("insertHTML", false, figureHtml);
+        setContent(editorRef.current.innerHTML);
+      } else {
+        setContent((prev) => `${prev}${figureHtml}`);
+      }
       setNotice(`Görsel WebP olarak optimize edilip eklendi (~${res.sizeKB} KB).`);
       setTimeout(() => setNotice(null), 3500);
     } catch (err) {
@@ -748,9 +731,12 @@ export default function WriterPage() {
 
               {/* Rich Text Editor Formatting Toolbar */}
               <EditorToolbar
-                textareaRef={textareaRef}
-                content={content}
-                setContent={setContent}
+                editorRef={editorRef}
+                syncContent={() => {
+                  if (editorRef.current) {
+                    setContent(editorRef.current.innerHTML);
+                  }
+                }}
                 fontFamily={fontFamily}
                 setFontFamily={setFontFamily}
                 fontSize={fontSize}
@@ -821,60 +807,18 @@ export default function WriterPage() {
                 />
               </div>
 
-              {/* Textarea / Body with Dynamic Typography and Keyboard Shortcuts */}
-              <div className="min-h-[180px]">
-                <textarea
-                  ref={textareaRef}
-                  placeholder="Yazmaya başlayın... (Kalın: Ctrl+B, İtalik: Ctrl+I, WhatsApp/Word metinleri otomatik temizlenir)"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  onPaste={handlePaste}
-                  onKeyDown={(e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
-                      e.preventDefault();
-                      const el = textareaRef.current;
-                      if (!el) return;
-                      const start = el.selectionStart;
-                      const end = el.selectionEnd;
-                      const selected = content.slice(start, end);
-                      const replacement = selected ? `**${selected}**` : `**metin**`;
-                      const newContent = content.slice(0, start) + replacement + content.slice(end);
-                      setContent(newContent);
-                      setTimeout(() => {
-                        el.focus();
-                        el.setSelectionRange(start + 2, start + 2 + (selected ? selected.length : 5));
-                      }, 0);
-                    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "i") {
-                      e.preventDefault();
-                      const el = textareaRef.current;
-                      if (!el) return;
-                      const start = el.selectionStart;
-                      const end = el.selectionEnd;
-                      const selected = content.slice(start, end);
-                      const replacement = selected ? `*${selected}*` : `*metin*`;
-                      const newContent = content.slice(0, start) + replacement + content.slice(end);
-                      setContent(newContent);
-                      setTimeout(() => {
-                        el.focus();
-                        el.setSelectionRange(start + 1, start + 1 + (selected ? selected.length : 5));
-                      }, 0);
-                    }
-                  }}
-                  className={`w-full ${
-                    fontFamily === "typewriter"
-                      ? "font-mono tracking-tight"
-                      : fontFamily === "sans"
-                      ? "font-sans"
-                      : "font-serif"
-                  } ${
-                    fontSize === "small"
-                      ? "text-base sm:text-lg leading-relaxed"
-                      : fontSize === "large"
-                      ? "text-xl sm:text-2xl leading-[1.95]"
-                      : "text-lg sm:text-xl leading-[1.85]"
-                  } text-[#2b1b0e] placeholder-[#a68972]/50 bg-transparent border-0 focus:outline-hidden resize-none overflow-hidden block min-h-[180px]`}
-                />
-              </div>
+              {/* True WYSIWYG Visual Editor */}
+              <RichEditor
+                content={content}
+                onChange={setContent}
+                fontFamily={fontFamily}
+                fontSize={fontSize}
+                editorRef={editorRef}
+                onAutoCleanNotice={() => {
+                  setAutoCleanNotice(true);
+                  setTimeout(() => setAutoCleanNotice(false), 3500);
+                }}
+              />
             </div>
           </div>
         ) : activeTab === "drafts" ? (

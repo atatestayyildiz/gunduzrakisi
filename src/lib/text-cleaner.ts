@@ -48,7 +48,8 @@ export function cleanPastedText(rawText: string): string {
  */
 export function calculateSips(text: string): { readTimeMinutes: number; sips: number } {
   if (!text) return { readTimeMinutes: 1, sips: 1 };
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const plainText = text.replace(/<[^>]+>/g, " ").trim();
+  const words = plainText.split(/\s+/).filter(Boolean).length;
   const readTimeMinutes = Math.max(1, Math.ceil(words / 180));
   // 1 to 2 mins per sip
   const sips = Math.max(1, Math.ceil(readTimeMinutes / 1.5));

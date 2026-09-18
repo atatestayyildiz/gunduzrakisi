@@ -12,12 +12,12 @@ import {
   Eraser,
   ImageIcon,
   Type,
+  Pilcrow,
 } from "lucide-react";
 
 export interface EditorToolbarProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  content: string;
-  setContent: (val: string) => void;
+  editorRef: React.RefObject<HTMLDivElement | null>;
+  syncContent: () => void;
   fontFamily: "serif" | "typewriter" | "sans";
   setFontFamily: (font: "serif" | "typewriter" | "sans") => void;
   fontSize: "small" | "medium" | "large";
@@ -27,9 +27,8 @@ export interface EditorToolbarProps {
 }
 
 export function EditorToolbar({
-  textareaRef,
-  content,
-  setContent,
+  editorRef,
+  syncContent,
   fontFamily,
   setFontFamily,
   fontSize,
@@ -37,86 +36,13 @@ export function EditorToolbar({
   onInsertImageClick,
   onCleanTextClick,
 }: EditorToolbarProps) {
-  // Helper to wrap or insert text around selection
-  const wrapSelection = (prefix: string, suffix = prefix, placeholder = "metin") => {
-    const el = textareaRef.current;
-    if (!el) return;
-
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const selected = content.slice(start, end);
-
-    let replacement = "";
-    let newCursorPos = 0;
-
-    if (selected) {
-      // If text is selected, wrap it
-      replacement = `${prefix}${selected}${suffix}`;
-      const newContent = content.slice(0, start) + replacement + content.slice(end);
-      setContent(newContent);
-      newCursorPos = start + replacement.length;
-    } else {
-      // If no text is selected, insert placeholder and select it
-      replacement = `${prefix}${placeholder}${suffix}`;
-      const newContent = content.slice(0, start) + replacement + content.slice(end);
-      setContent(newContent);
-      newCursorPos = start + prefix.length;
+  // Execute WYSIWYG command directly on selected text without losing focus
+  const exec = (command: string, value: string | undefined = undefined) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
     }
-
-    setTimeout(() => {
-      el.focus();
-      if (!selected) {
-        el.setSelectionRange(newCursorPos, newCursorPos + placeholder.length);
-      } else {
-        el.setSelectionRange(newCursorPos, newCursorPos);
-      }
-    }, 0);
-  };
-
-  // Helper to prepend to the current line
-  const prependLine = (prefix: string, defaultText = "Metin buraya...") => {
-    const el = textareaRef.current;
-    if (!el) return;
-
-    const start = el.selectionStart;
-    const lastNewline = content.lastIndexOf("\n", start - 1);
-    const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
-
-    const before = content.slice(0, lineStart);
-    const after = content.slice(lineStart);
-
-    // If line already starts with prefix, remove it (toggle)
-    if (after.startsWith(prefix)) {
-      const toggled = after.slice(prefix.length);
-      setContent(before + toggled);
-      setTimeout(() => {
-        el.focus();
-        el.setSelectionRange(lineStart, lineStart);
-      }, 0);
-      return;
-    }
-
-    const newContent = before + prefix + (after.trim() ? after : defaultText);
-    setContent(newContent);
-
-    setTimeout(() => {
-      el.focus();
-      const pos = lineStart + prefix.length;
-      el.setSelectionRange(pos, pos);
-    }, 0);
-  };
-
-  const insertDivider = () => {
-    const el = textareaRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const dividerText = "\n\n* * *\n\n";
-    const newContent = content.slice(0, start) + dividerText + content.slice(start);
-    setContent(newContent);
-    setTimeout(() => {
-      el.focus();
-      el.setSelectionRange(start + dividerText.length, start + dividerText.length);
-    }, 0);
+    document.execCommand(command, false, value);
+    syncContent();
   };
 
   return (
@@ -126,8 +52,11 @@ export function EditorToolbar({
         {/* Bold */}
         <button
           type="button"
-          onClick={() => wrapSelection("**", "**", "kalın metin")}
-          title="Kalın (Ctrl+B)"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("bold");
+          }}
+          title="Kalınlaştır (Seçili metin direkt kalın olur)"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Bold className="w-4 h-4 font-bold" />
@@ -136,8 +65,11 @@ export function EditorToolbar({
         {/* Italic */}
         <button
           type="button"
-          onClick={() => wrapSelection("*", "*", "italik metin")}
-          title="İtalik (Ctrl+I)"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("italic");
+          }}
+          title="İtalik Yap (Seçili metin direkt italik olur)"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Italic className="w-4 h-4" />
@@ -146,8 +78,11 @@ export function EditorToolbar({
         {/* Heading 2 */}
         <button
           type="button"
-          onClick={() => prependLine("## ", "Bölüm Başlığı")}
-          title="Büyük Başlık (##)"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("formatBlock", "h2");
+          }}
+          title="Büyük Başlık (H2)"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Heading2 className="w-4 h-4" />
@@ -156,18 +91,37 @@ export function EditorToolbar({
         {/* Heading 3 */}
         <button
           type="button"
-          onClick={() => prependLine("### ", "Alt Başlık")}
-          title="Alt Başlık (###)"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("formatBlock", "h3");
+          }}
+          title="Alt Başlık (H3)"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Heading3 className="w-4 h-4" />
         </button>
 
+        {/* Normal Paragraph */}
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("formatBlock", "p");
+          }}
+          title="Normal Paragraf"
+          className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
+        >
+          <Pilcrow className="w-4 h-4" />
+        </button>
+
         {/* Quote */}
         <button
           type="button"
-          onClick={() => prependLine("> ", "Alıntı veya dikkat çeken dize...")}
-          title="Edebi Alıntı Bloğu (>)"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("formatBlock", "blockquote");
+          }}
+          title="Edebi Alıntı Bloğu"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Quote className="w-4 h-4" />
@@ -176,8 +130,11 @@ export function EditorToolbar({
         {/* List */}
         <button
           type="button"
-          onClick={() => prependLine("- ", "Madde")}
-          title="Madde İmi (-)"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("insertUnorderedList");
+          }}
+          title="Madde İmi Listesi"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <List className="w-4 h-4" />
@@ -186,8 +143,11 @@ export function EditorToolbar({
         {/* Divider */}
         <button
           type="button"
-          onClick={insertDivider}
-          title="Bozkır Ayracı (* * *)"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec("insertHorizontalRule");
+          }}
+          title="Bozkır Ayracı Çizgisi"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Minus className="w-4 h-4" />
@@ -198,8 +158,11 @@ export function EditorToolbar({
         {/* Image */}
         <button
           type="button"
-          onClick={onInsertImageClick}
-          title="Paragraf arasına görsel ekle"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            onInsertImageClick();
+          }}
+          title="Görsel ekle (WebP sıkıştırmalı)"
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-xs font-serif text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <ImageIcon className="w-3.5 h-3.5 text-amber-800" />
@@ -209,8 +172,11 @@ export function EditorToolbar({
         {/* Clean text */}
         <button
           type="button"
-          onClick={onCleanTextClick}
-          title="WhatsApp & Word izlerini arındır"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            onCleanTextClick();
+          }}
+          title="WhatsApp & Word karmaşasını temizle"
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-xs font-serif text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Eraser className="w-3.5 h-3.5 text-amber-800" />
@@ -252,3 +218,4 @@ export function EditorToolbar({
     </div>
   );
 }
+

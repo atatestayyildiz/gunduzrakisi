@@ -19,20 +19,32 @@ const LOCAL_STORAGE_CATEGORIES_KEY = "gunduz_rakisi_categories_v5";
 const LOCAL_STORAGE_MUSIC_KEY = "gunduz_rakisi_music_tracks_v1";
 
 /**
+ * Strips all undefined fields from an object so Firestore setDoc does not throw errors.
+ */
+export function cleanForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
+
+/**
  * Gets all articles sorted by order.
  */
 export async function getArticles(): Promise<BookArticle[]> {
   // 1. Try Firestore if configured
   if (isFirebaseConfigured && db) {
     try {
-      const q = query(collection(db, "articles"), orderBy("order", "asc"));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
+      const snap = await getDocs(collection(db, "articles"));
+      if (!snap.empty) {
         const list: BookArticle[] = [];
-        querySnapshot.forEach((d) => {
+        snap.forEach((d) => {
           list.push({ ...d.data(), id: d.id } as BookArticle);
         });
-        return list;
+        return list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       } else {
         // If Firestore is empty, check if LocalStorage has existing articles to migrate
         if (typeof window !== "undefined") {
@@ -42,8 +54,10 @@ export async function getArticles(): Promise<BookArticle[]> {
             if (localList && localList.length > 0) {
               for (const a of localList) {
                 try {
-                  await setDoc(doc(db, "articles", a.id), a);
-                } catch {}
+                  await setDoc(doc(db, "articles", a.id), cleanForFirestore(a));
+                } catch (mErr) {
+                  console.warn("Auto-migration article item failed:", mErr);
+                }
               }
               return localList.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
             }
@@ -84,26 +98,30 @@ export async function getArticles(): Promise<BookArticle[]> {
  * Saves or updates an article.
  */
 export async function saveArticle(article: BookArticle): Promise<void> {
+  const cleaned = cleanForFirestore(article);
+
   // Update Firestore if available
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, "articles", article.id), article);
+      await setDoc(doc(db, "articles", article.id), cleaned);
     } catch (err) {
       console.error("Firestore save error:", err);
+      throw err;
     }
   }
 
   // Update LocalStorage
   if (typeof window !== "undefined") {
     try {
-      const articles = await getArticles();
-      const index = articles.findIndex((a) => a.id === article.id);
+      const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+      const currentList = stored ? (JSON.parse(stored) as BookArticle[]) : [];
+      const index = currentList.findIndex((a) => a.id === article.id);
       let updated: BookArticle[];
       if (index >= 0) {
-        updated = [...articles];
+        updated = [...currentList];
         updated[index] = article;
       } else {
-        updated = [article, ...articles];
+        updated = [article, ...currentList];
       }
       localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(updated));
     } catch (e) {
@@ -125,9 +143,14 @@ export async function deleteArticle(id: string): Promise<void> {
   }
 
   if (typeof window !== "undefined") {
-    const articles = await getArticles();
-    const updated = articles.filter((a) => a.id !== id);
-    localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(updated));
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+      const currentList = stored ? (JSON.parse(stored) as BookArticle[]) : [];
+      const updated = currentList.filter((a) => a.id !== id);
+      localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error("Local storage delete error:", e);
+    }
   }
 }
 
@@ -145,12 +168,12 @@ export async function saveArticlesOrder(orderedArticles: BookArticle[]): Promise
   }
 
   if (isFirebaseConfigured && db) {
-    try {
-      for (const item of updated) {
-        await setDoc(doc(db, "articles", item.id), item, { merge: true });
+    for (const item of updated) {
+      try {
+        await setDoc(doc(db, "articles", item.id), cleanForFirestore(item), { merge: true });
+      } catch (err) {
+        console.error("Firestore order save error:", err);
       }
-    } catch (err) {
-      console.error("Firestore order update error:", err);
     }
   }
 }
@@ -209,7 +232,7 @@ export async function getCategories(): Promise<CategoryItem[]> {
 export async function saveCategory(category: CategoryItem): Promise<void> {
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, "categories", category.id), category);
+      await setDoc(doc(db, "categories", category.id), cleanForFirestore(category));
     } catch (err) {
       console.error("Firestore category save error:", err);
     }
@@ -322,7 +345,7 @@ export async function getMusicTracks(): Promise<MusicTrack[]> {
 export async function saveMusicTrack(track: MusicTrack): Promise<void> {
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, "music_tracks", track.id), track);
+      await setDoc(doc(db, "music_tracks", track.id), cleanForFirestore(track));
     } catch (err) {
       console.error("Firestore music track save error:", err);
     }

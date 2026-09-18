@@ -32,6 +32,22 @@ export async function getArticles(): Promise<BookArticle[]> {
           list.push({ ...d.data(), id: d.id } as BookArticle);
         });
         return list;
+      } else {
+        // If Firestore is empty, check if LocalStorage has existing articles to migrate
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+          if (stored) {
+            const localList = JSON.parse(stored) as BookArticle[];
+            if (localList && localList.length > 0) {
+              for (const a of localList) {
+                try {
+                  await setDoc(doc(db, "articles", a.id), a);
+                } catch {}
+              }
+              return localList.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            }
+          }
+        }
       }
     } catch (err) {
       console.warn("Firestore fetch failed, falling back to local storage:", err);
@@ -142,6 +158,37 @@ export async function saveArticlesOrder(orderedArticles: BookArticle[]): Promise
  * Gets all categories.
  */
 export async function getCategories(): Promise<CategoryItem[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await getDocs(collection(db, "categories"));
+      if (!snap.empty) {
+        const list: CategoryItem[] = [];
+        snap.forEach((d) => list.push({ ...d.data(), id: d.id } as CategoryItem));
+        return list;
+      } else {
+        // If Firestore categories is empty, check if user has local categories or seed with initial
+        let toSeed = INITIAL_CATEGORIES;
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem(LOCAL_STORAGE_CATEGORIES_KEY);
+          if (stored) {
+            const localCats = JSON.parse(stored) as CategoryItem[];
+            if (localCats && localCats.length > 0) {
+              toSeed = localCats;
+            }
+          }
+        }
+        for (const cat of toSeed) {
+          try {
+            await setDoc(doc(db, "categories", cat.id), cat);
+          } catch {}
+        }
+        return toSeed;
+      }
+    } catch (err) {
+      console.warn("Firestore categories read error:", err);
+    }
+  }
+
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_CATEGORIES_KEY);
@@ -159,6 +206,14 @@ export async function getCategories(): Promise<CategoryItem[]> {
  * Adds or saves a new category.
  */
 export async function saveCategory(category: CategoryItem): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, "categories", category.id), category);
+    } catch (err) {
+      console.error("Firestore category save error:", err);
+    }
+  }
+
   if (typeof window !== "undefined") {
     const categories = await getCategories();
     if (!categories.find((c) => c.id === category.id)) {
@@ -172,6 +227,14 @@ export async function saveCategory(category: CategoryItem): Promise<void> {
  * Updates an existing category name.
  */
 export async function updateCategory(id: string, newName: string): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, "categories", id), { name: newName.trim() }, { merge: true });
+    } catch (err) {
+      console.error("Firestore category update error:", err);
+    }
+  }
+
   if (typeof window !== "undefined") {
     const categories = await getCategories();
     const updated = categories.map((c) =>
@@ -185,6 +248,14 @@ export async function updateCategory(id: string, newName: string): Promise<void>
  * Deletes a category by id.
  */
 export async function deleteCategory(id: string): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await deleteDoc(doc(db, "categories", id));
+    } catch (err) {
+      console.error("Firestore category delete error:", err);
+    }
+  }
+
   if (typeof window !== "undefined") {
     const categories = await getCategories();
     const updated = categories.filter((c) => c.id !== id);
@@ -207,6 +278,22 @@ export async function getMusicTracks(): Promise<MusicTrack[]> {
           list.push({ ...d.data(), id: d.id } as MusicTrack);
         });
         return list;
+      } else {
+        // If Firestore is empty, check if LocalStorage has existing tracks to migrate
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem(LOCAL_STORAGE_MUSIC_KEY);
+          if (stored) {
+            const localTracks = JSON.parse(stored) as MusicTrack[];
+            if (localTracks && localTracks.length > 0) {
+              for (const t of localTracks) {
+                try {
+                  await setDoc(doc(db, "music_tracks", t.id), t);
+                } catch {}
+              }
+              return localTracks;
+            }
+          }
+        }
       }
     } catch (err) {
       console.warn("Firestore music fetch failed, falling back to local storage:", err);

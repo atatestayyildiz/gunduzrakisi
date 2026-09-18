@@ -18,7 +18,7 @@ import {
   deleteMusicTrack,
   getAuthorPasscode,
 } from "@/lib/posts-service";
-import { cleanPastedText, calculateSips } from "@/lib/text-cleaner";
+import { cleanPastedText, calculateSips, getCleanExcerpt } from "@/lib/text-cleaner";
 import { slugify } from "@/lib/slug-utils";
 import { PastoralBackground } from "@/components/author/pastoral-bg";
 import { BookDrawer } from "@/components/author/book-drawer";
@@ -387,7 +387,7 @@ export default function WriterPage() {
       slug,
       title: draftTitle,
       content: content.trim(),
-      excerpt: content.trim().slice(0, 180) + "...",
+      excerpt: getCleanExcerpt(content, 240),
       category,
       date: date.trim() || (editingId ? (articles.find((a) => a.id === editingId)?.date || today) : today),
       readTimeMinutes,
@@ -453,7 +453,7 @@ export default function WriterPage() {
       slug,
       title: title.trim(),
       content: content.trim(),
-      excerpt: content.trim().slice(0, 180) + "...",
+      excerpt: getCleanExcerpt(content, 240),
       category,
       date: date.trim() || (editingId ? (articles.find((a) => a.id === editingId)?.date || today) : today),
       readTimeMinutes,

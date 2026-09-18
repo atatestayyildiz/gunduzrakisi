@@ -6,6 +6,7 @@ import { BookArticle } from "@/lib/types";
 import { BookCover } from "@/components/ui/book";
 import { BookOpen, ArrowRight, X, Music } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
+import { getCleanExcerpt } from "@/lib/text-cleaner";
 
 interface BookOpeningTransitionProps {
   article: BookArticle;
@@ -208,7 +209,7 @@ export const BookOpeningTransition = ({
 
               {/* Excerpt */}
               <p className="font-serif text-sm leading-relaxed text-[#3f2a1b] line-clamp-5 italic">
-                {article.excerpt || article.content.slice(0, 240) + "..."}
+                {getCleanExcerpt(article.excerpt || article.content, 260)}
               </p>
             </div>
 

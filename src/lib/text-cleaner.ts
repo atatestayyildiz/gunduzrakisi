@@ -55,3 +55,40 @@ export function calculateSips(text: string): { readTimeMinutes: number; sips: nu
   const sips = Math.max(1, Math.ceil(readTimeMinutes / 1.5));
   return { readTimeMinutes, sips };
 }
+
+/**
+ * Strips all HTML tags, HTML entities, and Markdown formatting syntax
+ * to return pure readable clean text (ideal for excerpts and previews).
+ */
+export function stripHtmlAndFormatting(text: string): string {
+  if (!text) return "";
+  return text
+    // Replace HTML tags with spaces
+    .replace(/<[^>]*>/g, " ")
+    // Clean common HTML entities
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    // Remove markdown symbols (headers, quotes, bold, italic, code)
+    .replace(/^#+\s+/gm, "")
+    .replace(/^>\s+/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/`([^`]+)`/g, "$1")
+    // Collapse multiple whitespace/newlines into a single clean space
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Generates a clean text excerpt up to maxLength characters with ellipsis.
+ */
+export function getCleanExcerpt(text: string, maxLength: number = 240): string {
+  const clean = stripHtmlAndFormatting(text);
+  if (clean.length <= maxLength) return clean;
+  return clean.slice(0, maxLength).trim() + "...";
+}
+

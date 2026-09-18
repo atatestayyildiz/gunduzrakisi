@@ -19,6 +19,9 @@ import { slugify } from "@/lib/slug-utils";
 import { PastoralBackground } from "@/components/author/pastoral-bg";
 import { BookDrawer } from "@/components/author/book-drawer";
 import { ShelfOrganizer } from "@/components/author/shelf-organizer";
+import { DeleteConfirmModal } from "@/components/author/delete-confirm-modal";
+import { EditorToolbar } from "@/components/author/editor-toolbar";
+import { convertToWebP } from "@/lib/image-utils";
 import {
   ArrowLeft,
   Sparkles,
@@ -67,6 +70,18 @@ export default function WriterPage() {
   const [musicArtist, setMusicArtist] = useState("");
   const [musicUrl, setMusicUrl] = useState("");
   const [musicCover, setMusicCover] = useState("");
+  const [fontFamily, setFontFamily] = useState<"serif" | "typewriter" | "sans">("serif");
+  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
+
+  // In-site deletion modal state
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "article" | "category";
+    id: string;
+    name: string;
+    isDraft?: boolean;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const inTextImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // UI states
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -208,12 +223,26 @@ export default function WriterPage() {
     setTimeout(() => setAutoCleanNotice(false), 3000);
   };
 
-  // Insert image markdown tag into editor
+  // Insert image: can choose a file (compressed to WebP) or enter URL
   const handleInsertImage = () => {
-    const url = prompt("Lütfen eklenecek görselin web adresini (URL) girin:");
-    if (!url) return;
-    const caption = prompt("Görsel alt yazısı (opsiyonel):") || "Görsel";
-    setContent((prev) => `${prev}\n\n![${caption}](${url})\n\n`);
+    inTextImageInputRef.current?.click();
+  };
+
+  const handleInTextImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await convertToWebP(file, 900, 1300, 0.82);
+      const caption = file.name.replace(/\.[^/.]+$/, "");
+      setContent((prev) => `${prev}\n\n![${caption}](${res.dataUrl})\n\n`);
+      setNotice(`Görsel WebP olarak optimize edilip eklendi (~${res.sizeKB} KB).`);
+      setTimeout(() => setNotice(null), 3500);
+    } catch (err) {
+      console.error("Görsel ekleme hatası:", err);
+      alert("Görsel işlenirken bir hata oluştu.");
+    } finally {
+      if (inTextImageInputRef.current) inTextImageInputRef.current.value = "";
+    }
   };
 
   // Add category
@@ -236,19 +265,14 @@ export default function WriterPage() {
     );
   };
 
-  // Delete category
-  const handleDeleteCategory = async (id: string) => {
+  // Delete category - opens in-site modal
+  const handleDeleteCategory = (id: string) => {
     const catToDelete = categories.find((c) => c.id === id);
-    const catName = catToDelete ? `"${catToDelete.name}"` : "bu";
-    if (confirm(`${catName} kategorisini silmek istediğinize emin misiniz?`)) {
-      await deleteCategory(id);
-      const updated = categories.filter((c) => c.id !== id);
-      setCategories(updated);
-      if (category === id) {
-        const fallback = updated.find((c) => c.id !== "all")?.id || "all";
-        setCategory(fallback);
-      }
-    }
+    setDeleteTarget({
+      type: "category",
+      id,
+      name: catToDelete ? catToDelete.name : "Kategori",
+    });
   };
 
   const drafts = articles.filter((a) => a.isDraft);
@@ -270,19 +294,53 @@ export default function WriterPage() {
     setMusicArtist(art.musicArtist || "");
     setMusicUrl(art.musicUrl || "");
     setMusicCover(art.musicCover || "");
+    setFontFamily(art.fontFamily || "serif");
+    setFontSize(art.fontSize || "medium");
     setActiveTab("write");
   };
 
-  // Delete article or draft
-  const handleDelete = async (id: string) => {
-    const isTargetDraft = drafts.some((d) => d.id === id);
-    const label = isTargetDraft ? "Bu taslağı" : "Bu denemeyi kitaplıktan";
-    if (confirm(`${label} silmek istediğinize emin misiniz?`)) {
-      await deleteArticle(id);
-      setArticles((prev) => prev.filter((a) => a.id !== id));
-      if (editingId === id) {
-        resetForm();
+  // Delete article or draft - opens in-site modal
+  const handleDelete = (id: string) => {
+    const art = articles.find((a) => a.id === id);
+    const isTargetDraft = art?.isDraft || drafts.some((d) => d.id === id);
+    const titleText = art?.title || (isTargetDraft ? "Başlıksız Taslak" : "Bu Eser");
+    setDeleteTarget({
+      type: "article",
+      id,
+      name: titleText,
+      isDraft: isTargetDraft,
+    });
+  };
+
+  // Confirm delete handler executed by DeleteConfirmModal
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === "article") {
+        await deleteArticle(deleteTarget.id);
+        setArticles((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+        if (editingId === deleteTarget.id) {
+          resetForm();
+        }
+        setNotice(`"${deleteTarget.name}" başarıyla silindi.`);
+      } else if (deleteTarget.type === "category") {
+        await deleteCategory(deleteTarget.id);
+        const updated = categories.filter((c) => c.id !== deleteTarget.id);
+        setCategories(updated);
+        if (category === deleteTarget.id) {
+          const fallback = updated.find((c) => c.id !== "all")?.id || "all";
+          setCategory(fallback);
+        }
+        setNotice(`"${deleteTarget.name}" kategorisi silindi.`);
       }
+    } catch (err) {
+      console.error("Silme hatası:", err);
+      alert("Silme işlemi sırasında bir hata oluştu.");
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+      setTimeout(() => setNotice(null), 3500);
     }
   };
 
@@ -296,6 +354,8 @@ export default function WriterPage() {
     setMusicArtist("");
     setMusicUrl("");
     setMusicCover("");
+    setFontFamily("serif");
+    setFontSize("medium");
   };
 
   // Save as draft
@@ -341,6 +401,8 @@ export default function WriterPage() {
       musicCover: musicCover || undefined,
       order: editingId ? (articles.find((a) => a.id === editingId)?.order || 0) : articles.length,
       isDraft: true,
+      fontFamily,
+      fontSize,
       createdAt: editingId ? (articles.find((a) => a.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
     };
 
@@ -405,6 +467,8 @@ export default function WriterPage() {
       musicCover: musicCover || undefined,
       order: editingId ? (articles.find((a) => a.id === editingId)?.order || 0) : published.length,
       isDraft: false,
+      fontFamily,
+      fontSize,
       createdAt: editingId ? (articles.find((a) => a.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
     };
 
@@ -673,29 +737,31 @@ export default function WriterPage() {
               className="relative px-6 pt-6 sm:px-12 sm:pt-12 rounded-t-3xl rounded-b-none bg-[#faf6f0]/95 border-x-2 border-t-2 border-b-0 border-[#d9c7b2] shadow-2xl backdrop-blur-xs min-h-[calc(100vh-170px)]"
               style={{ paddingBottom: `${paperFeedScroll}px` }}
             >
-              {/* Paper Top Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-6 mb-6 border-b border-[#e5d6c5]">
+              {/* Hidden file input for in-text image WebP upload */}
+              <input
+                ref={inTextImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleInTextImageUpload}
+                className="hidden"
+              />
+
+              {/* Rich Text Editor Formatting Toolbar */}
+              <EditorToolbar
+                textareaRef={textareaRef}
+                content={content}
+                setContent={setContent}
+                fontFamily={fontFamily}
+                setFontFamily={setFontFamily}
+                fontSize={fontSize}
+                setFontSize={setFontSize}
+                onInsertImageClick={handleInsertImage}
+                onCleanTextClick={handleManualClean}
+              />
+
+              {/* Paper Top Sub-Toolbar / Status */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-[#e5d6c5]">
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleManualClean}
-                    title="WhatsApp ve Word fazlalıklarını temizle"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ece1d2] hover:bg-[#ded0bf] text-xs font-serif text-[#4e311a] transition-colors cursor-pointer"
-                  >
-                    <Eraser className="w-3.5 h-3.5 text-amber-800" />
-                    <span>Metni Arındır</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleInsertImage}
-                    title="Paragraf arasına görsel yerleştir"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ece1d2] hover:bg-[#ded0bf] text-xs font-serif text-[#4e311a] transition-colors cursor-pointer"
-                  >
-                    <ImageIcon className="w-3.5 h-3.5 text-amber-800" />
-                    <span>Görsel Ekle</span>
-                  </button>
-
                   <button
                     type="button"
                     onClick={handleSaveAsDraft}
@@ -755,15 +821,58 @@ export default function WriterPage() {
                 />
               </div>
 
-              {/* Textarea / Body */}
+              {/* Textarea / Body with Dynamic Typography and Keyboard Shortcuts */}
               <div className="min-h-[180px]">
                 <textarea
                   ref={textareaRef}
-                  placeholder="Yazmaya başlayın ya da WhatsApp/Word'den kopyalayıp buraya yapıştırın..."
+                  placeholder="Yazmaya başlayın... (Kalın: Ctrl+B, İtalik: Ctrl+I, WhatsApp/Word metinleri otomatik temizlenir)"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   onPaste={handlePaste}
-                  className="w-full font-serif text-lg sm:text-xl leading-[1.85] text-[#2b1b0e] placeholder-[#a68972]/50 bg-transparent border-0 focus:outline-hidden resize-none overflow-hidden block min-h-[180px]"
+                  onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+                      e.preventDefault();
+                      const el = textareaRef.current;
+                      if (!el) return;
+                      const start = el.selectionStart;
+                      const end = el.selectionEnd;
+                      const selected = content.slice(start, end);
+                      const replacement = selected ? `**${selected}**` : `**metin**`;
+                      const newContent = content.slice(0, start) + replacement + content.slice(end);
+                      setContent(newContent);
+                      setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(start + 2, start + 2 + (selected ? selected.length : 5));
+                      }, 0);
+                    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "i") {
+                      e.preventDefault();
+                      const el = textareaRef.current;
+                      if (!el) return;
+                      const start = el.selectionStart;
+                      const end = el.selectionEnd;
+                      const selected = content.slice(start, end);
+                      const replacement = selected ? `*${selected}*` : `*metin*`;
+                      const newContent = content.slice(0, start) + replacement + content.slice(end);
+                      setContent(newContent);
+                      setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(start + 1, start + 1 + (selected ? selected.length : 5));
+                      }, 0);
+                    }
+                  }}
+                  className={`w-full ${
+                    fontFamily === "typewriter"
+                      ? "font-mono tracking-tight"
+                      : fontFamily === "sans"
+                      ? "font-sans"
+                      : "font-serif"
+                  } ${
+                    fontSize === "small"
+                      ? "text-base sm:text-lg leading-relaxed"
+                      : fontSize === "large"
+                      ? "text-xl sm:text-2xl leading-[1.95]"
+                      : "text-lg sm:text-xl leading-[1.85]"
+                  } text-[#2b1b0e] placeholder-[#a68972]/50 bg-transparent border-0 focus:outline-hidden resize-none overflow-hidden block min-h-[180px]`}
                 />
               </div>
             </div>
@@ -991,6 +1100,30 @@ export default function WriterPage() {
           </div>
         </div>
       )}
+      {/* Antique In-Site Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteTarget !== null}
+        title={
+          deleteTarget?.type === "category"
+            ? "Kategoriyi Silmek Üzeresiniz"
+            : deleteTarget?.isDraft
+            ? "Taslağı Silmek Üzeresiniz"
+            : "Denemeyi Kitaplıktan Silmek Üzeresiniz"
+        }
+        itemName={deleteTarget?.name || ""}
+        description={
+          deleteTarget?.type === "category"
+            ? "Bu kategoriyi sildiğinizde, kategori altındaki yazılar genel kütüphanede kalmaya devam edecektir."
+            : deleteTarget?.isDraft
+            ? "Bu taslak sandıktan kalıcı olarak silinecek ve geri alınamayacaktır."
+            : "Bu eser kitaplık raflarından ve veritabanından kalıcı olarak kaldırılacaktır."
+        }
+        confirmText="Evet, Kalıcı Olarak Sil"
+        cancelText="Vazgeç"
+        isDeleting={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

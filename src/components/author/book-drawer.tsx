@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Book } from "@/components/ui/book";
 import { CategoryItem } from "@/lib/types";
+import { convertToWebP } from "@/lib/image-utils";
 import {
   X,
   Sliders,
@@ -18,7 +19,10 @@ import {
   Trash2,
   Check,
   Calendar,
-  FileText
+  FileText,
+  Upload,
+  ImageIcon,
+  Loader2,
 } from "lucide-react";
 
 interface BookDrawerProps {
@@ -111,6 +115,28 @@ export const BookDrawer = ({
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editingCatName, setEditingCatName] = useState("");
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsCompressing(true);
+      setCompressionInfo("WebP'ye dönüştürülüyor ve sıkıştırılıyor...");
+      const res = await convertToWebP(file, 800, 1200, 0.82);
+      onCoverImageChange(res.dataUrl);
+      setCompressionInfo(`WebP: ~${res.sizeKB} KB (Orijinal: ${res.originalSizeKB} KB)`);
+    } catch (err) {
+      console.error("Görsel dönüştürme hatası:", err);
+      alert("Görsel işlenirken bir hata oluştu.");
+    } finally {
+      setIsCompressing(false);
+      // Reset input so same file can be re-selected if deleted
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleAddCat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -357,18 +383,97 @@ export const BookDrawer = ({
             </div>
           </div>
 
-          {/* Kapak Görseli (Opsiyonel) */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-1.5">
-            <label className="block text-xs font-serif font-semibold text-[#4a2b13]">
-              Özel Kapak Görseli URL (Opsiyonel)
-            </label>
+          {/* Kapak Görseli (Otomatik WebP Optimizasyonu) */}
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-serif font-semibold text-[#4a2b13]">
+                Kapak Görseli (Otomatik WebP)
+              </label>
+              <span className="text-[11px] font-serif text-amber-900/60">
+                {coverImage ? "Seçildi" : "Opsiyonel"}
+              </span>
+            </div>
+
+            {/* Hidden file input */}
             <input
-              type="text"
-              placeholder="https://... (Örn: Blogger / Unsplash görseli)"
-              value={coverImage || ""}
-              onChange={(e) => onCoverImageChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs focus:outline-hidden focus:ring-2 focus:ring-amber-800/40"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCoverFileChange}
+              className="hidden"
             />
+
+            {coverImage ? (
+              /* Image Preview Card */
+              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-[#d8c7b4]">
+                <div className="relative w-12 h-16 rounded-md overflow-hidden bg-[#2d1b0f] border border-[#a88d72] shrink-0 shadow-xs">
+                  <img
+                    src={coverImage}
+                    alt="Kapak Önizleme"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-serif font-semibold text-[#3b200b] truncate">
+                    Kapak Görseli Aktif
+                  </p>
+                  {compressionInfo && (
+                    <p className="text-[11px] font-serif text-emerald-800">
+                      {compressionInfo}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onCoverImageChange("");
+                      setCompressionInfo(null);
+                    }}
+                    className="mt-1 text-[11px] font-serif text-rose-800 underline hover:text-rose-950 cursor-pointer"
+                  >
+                    Görseli Kaldır
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Upload trigger button */
+              <div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isCompressing}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#eee2d0] hover:bg-[#e2d2be] border-2 border-dashed border-[#cbb399] text-[#4a2b13] text-xs font-serif font-semibold transition-all cursor-pointer shadow-xs active:scale-[0.99] disabled:opacity-50"
+                >
+                  {isCompressing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-800" />
+                      <span>WebP Formatına Sıkıştırılıyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 text-amber-800" />
+                      <span>Cihazdan Kapak Görseli Yükle (WebP)</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] font-serif italic text-[#80644d] text-center mt-1.5">
+                  Fotoğraflar otomatik olarak ölçeklenir ve hafif WebP formatına çevrilir.
+                </p>
+              </div>
+            )}
+
+            {/* Direct URL input (alternative fallback) */}
+            <div className="pt-1 border-t border-[#e2d1bd]">
+              <input
+                type="text"
+                placeholder="veya direkt görsel URL'si yapıştırın (https://...)"
+                value={coverImage && !coverImage.startsWith("data:") ? coverImage : ""}
+                onChange={(e) => {
+                  onCoverImageChange(e.target.value);
+                  setCompressionInfo(null);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white/70 border border-[#d8c7b4] text-[11px] font-serif text-[#3b200b] placeholder-[#9a7d65] focus:outline-hidden focus:ring-1 focus:ring-amber-800"
+              />
+            </div>
           </div>
 
           {/* Kategori Seçimi & Yönetimi */}

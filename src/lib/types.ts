@@ -20,6 +20,8 @@ export interface BookArticle {
   order: number;
   heightRatio?: number; // 0.92 to 1.08 for natural variety on shelf
   isDraft?: boolean;
+  fontFamily?: "serif" | "typewriter" | "sans";
+  fontSize?: "small" | "medium" | "large";
   createdAt?: string;
 }
 

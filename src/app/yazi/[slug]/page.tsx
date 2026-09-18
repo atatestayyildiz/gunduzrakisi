@@ -8,6 +8,7 @@ import { getArticles } from "@/lib/posts-service";
 import { matchesArticleSlug } from "@/lib/slug-utils";
 import { ReadingProgress } from "@/components/reader/reading-progress";
 import { SiteMusicPlayer } from "@/components/reader/site-music-player";
+import { MarkdownRenderer } from "@/lib/markdown-renderer";
 import {
   ArrowLeft,
   Calendar,
@@ -78,9 +79,6 @@ export default function ArticlePage({ params }: PageProps) {
     );
   }
 
-  // Split article into paragraphs and render with literary drop cap
-  const paragraphs = article.content.split(/\n\n+/).filter(Boolean);
-
   return (
     <div className="min-h-screen plaster-wall relative text-[#2b2118] selection:bg-amber-800/20">
       <ReadingProgress />
@@ -150,36 +148,12 @@ export default function ArticlePage({ params }: PageProps) {
         </header>
 
         {/* Article Body - Typography-First Experience */}
-        <div className="font-serif text-lg sm:text-[21px] leading-[1.85] text-[#2c1d11] space-y-6 sm:space-y-7">
-          {paragraphs.map((p, index) => {
-            // Check if paragraph is an image link or quote
-            const isQuote = p.startsWith("“") || p.startsWith('"') || p.startsWith("«");
+        <MarkdownRenderer
+          content={article.content}
+          fontFamily={article.fontFamily}
+          fontSize={article.fontSize}
+        />
 
-            if (isQuote) {
-              return (
-                <blockquote
-                  key={index}
-                  className="my-8 pl-6 sm:pl-8 border-l-4 border-amber-800/60 font-serif italic text-xl sm:text-2xl text-[#462810] bg-[#eee4d6]/40 py-3 rounded-r-xl"
-                >
-                  {p}
-                </blockquote>
-              );
-            }
-
-            return (
-              <p
-                key={index}
-                className={`text-justify hyphens-auto ${
-                  index === 0
-                    ? "first-letter:float-left first-letter:text-5xl sm:first-letter:text-6xl first-letter:font-bold first-letter:mr-3 first-letter:text-amber-900 first-letter:font-serif first-letter:leading-none"
-                    : ""
-                }`}
-              >
-                {p}
-              </p>
-            );
-          })}
-        </div>
 
         {/* Article Sign-off & Divider */}
         <div className="mt-14 pt-8 border-t border-[#d8c8b4] flex flex-col items-center sm:items-start gap-3">

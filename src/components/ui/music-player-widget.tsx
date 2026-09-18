@@ -118,6 +118,8 @@ function useYouTubePlayer(divId: string) {
   }, []);
 
   const loadVideo = useCallback((videoId: string, autoplay: boolean) => {
+    setCurrentTime(0);
+    setDuration(0);
     if (playerRef.current && isReadyRef.current) {
       try {
         if (autoplay) {
@@ -295,7 +297,8 @@ interface MgrState {
 type MgrAction =
   | { type: "SET_TRACK"; index: number; direction: Direction }
   | { type: "TOGGLE_SHUFFLE"; count: number }
-  | { type: "CYCLE_LOOP" };
+  | { type: "CYCLE_LOOP" }
+  | { type: "SYNC_TRACKS"; count: number };
 
 function shuffle(pin: number, n: number) {
   const a = Array.from({ length: n }, (_, i) => i).filter((x) => x !== pin);
@@ -321,6 +324,23 @@ function mgrReducer(s: MgrState, a: MgrAction): MgrState {
     case "CYCLE_LOOP": {
       const next: LoopMode = s.loopMode === "off" ? "all" : s.loopMode === "all" ? "one" : "off";
       return { ...s, loopMode: next };
+    }
+    case "SYNC_TRACKS": {
+      const count = a.count;
+      if (count <= 0) return { ...s, currentIndex: 0, order: [], direction: null };
+      const safeCurrent = Math.min(s.currentIndex, count - 1);
+      if (s.shuffled) {
+        return {
+          ...s,
+          currentIndex: safeCurrent,
+          order: shuffle(safeCurrent, count),
+        };
+      }
+      return {
+        ...s,
+        currentIndex: safeCurrent,
+        order: Array.from({ length: count }, (_, i) => i),
+      };
     }
   }
 }
@@ -678,7 +698,7 @@ function Controls({
         className={`gr-ctrl gr-ctrl-sm${shuffled ? " gr-active" : ""}`}
         onClick={onShuffle}
         disabled={n < 2}
-        title="Karıştır"
+        title={shuffled ? "Karıştırma Açık" : "Karıştır"}
       >
         <svg
           viewBox="0 0 24 24"
@@ -726,7 +746,13 @@ function Controls({
       <button
         className={`gr-ctrl gr-ctrl-sm${loopMode !== "off" ? " gr-active" : ""}`}
         onClick={onLoop}
-        title="Döngü"
+        title={
+          loopMode === "off"
+            ? "Döngü (Kapalı)"
+            : loopMode === "all"
+            ? "Döngü (Tümünü Çal)"
+            : "Döngü (Tekrar Çal)"
+        }
         style={{ position: "relative" }}
       >
         <svg
@@ -803,31 +829,54 @@ export function MusicPlayerWidget({ tracks }: MusicPlayerWidgetProps) {
     return () => clearTimeout(t);
   }, [mgr.currentIndex, mgr.direction, tracks, yt]);
 
+  // Sync player order if tracks list length changes
+  useEffect(() => {
+    dispatch({ type: "SYNC_TRACKS", count: tracks.length });
+  }, [tracks.length]);
+
   const goNext = useCallback(() => {
+    if (mgr.order.length === 0) return;
     const pos = mgr.order.indexOf(mgr.currentIndex);
     const np = pos + 1;
     if (np >= mgr.order.length) {
-      if (mgr.loopMode === "all")
-        dispatch({ type: "SET_TRACK", index: mgr.order[0], direction: "next" });
+      // Wrap around to start of playlist
+      dispatch({ type: "SET_TRACK", index: mgr.order[0], direction: "next" });
       return;
     }
     dispatch({ type: "SET_TRACK", index: mgr.order[np], direction: "next" });
-  }, [mgr.order, mgr.currentIndex, mgr.loopMode]);
+  }, [mgr.order, mgr.currentIndex]);
 
   const goPrev = useCallback(() => {
+    if (mgr.order.length === 0) return;
     const pos = mgr.order.indexOf(mgr.currentIndex);
     const pp = pos - 1;
     if (pp < 0) {
-      if (mgr.loopMode === "all")
-        dispatch({ type: "SET_TRACK", index: mgr.order[mgr.order.length - 1], direction: "prev" });
+      // Wrap around to end of playlist
+      dispatch({ type: "SET_TRACK", index: mgr.order[mgr.order.length - 1], direction: "prev" });
       return;
     }
     dispatch({ type: "SET_TRACK", index: mgr.order[pp], direction: "prev" });
+  }, [mgr.order, mgr.currentIndex]);
+
+  // Transition automatically when song finishes playing
+  const handleEnded = useCallback(() => {
+    if (mgr.order.length === 0) return;
+    const pos = mgr.order.indexOf(mgr.currentIndex);
+    const np = pos + 1;
+    if (np >= mgr.order.length) {
+      if (mgr.loopMode === "all") {
+        wasPlayingRef.current = true;
+        dispatch({ type: "SET_TRACK", index: mgr.order[0], direction: "next" });
+      }
+      return;
+    }
+    wasPlayingRef.current = true;
+    dispatch({ type: "SET_TRACK", index: mgr.order[np], direction: "next" });
   }, [mgr.order, mgr.currentIndex, mgr.loopMode]);
 
   useEffect(() => {
-    yt.setOnEnded(goNext);
-  }, [yt, goNext]);
+    yt.setOnEnded(handleEnded);
+  }, [yt, handleEnded]);
 
   return (
     <div className={`gr-player-card${yt.isPlaying ? " gr-playing" : ""}`}>

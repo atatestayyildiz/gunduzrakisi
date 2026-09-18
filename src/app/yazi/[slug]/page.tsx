@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookArticle } from "@/lib/types";
 import { getArticles } from "@/lib/posts-service";
+import { matchesArticleSlug } from "@/lib/slug-utils";
 import { ReadingProgress } from "@/components/reader/reading-progress";
-import { MusicPlayer } from "@/components/reader/music-player";
+import { SiteMusicPlayer } from "@/components/reader/site-music-player";
 import {
   ArrowLeft,
   Calendar,
   Clock,
-  Sparkles,
   Wine,
   Share2,
   Check,
@@ -32,7 +32,7 @@ export default function ArticlePage({ params }: PageProps) {
   useEffect(() => {
     async function load() {
       const articles = await getArticles();
-      const found = articles.find((a) => a.slug === resolvedParams.slug);
+      const found = articles.find((a) => matchesArticleSlug(a, resolvedParams.slug));
       if (found) {
         setArticle(found);
       }
@@ -85,6 +85,9 @@ export default function ArticlePage({ params }: PageProps) {
   return (
     <div className="min-h-screen plaster-wall relative text-[#2b2118] selection:bg-amber-800/20">
       <ReadingProgress />
+
+      {/* Floating Music Player — sağ üstten kayarak açılır */}
+      <SiteMusicPlayer currentArticleId={article.id} />
 
       {/* Top Floating Navigation Bar */}
       <nav className="sticky top-0 z-40 bg-[#f4eee5]/85 backdrop-blur-md border-b border-[#e2d5c3] px-4 py-3 shadow-xs">
@@ -154,13 +157,6 @@ export default function ArticlePage({ params }: PageProps) {
           </div>
         </header>
 
-        {/* Music Companion Widget */}
-        <MusicPlayer
-          title={article.musicTitle}
-          artist={article.musicArtist}
-          url={article.musicUrl}
-        />
-
         {/* Article Body - Typography-First Experience */}
         <div className="font-serif text-lg sm:text-[21px] leading-[1.85] text-[#2c1d11] space-y-6 sm:space-y-7">
           {paragraphs.map((p, index) => {
@@ -201,26 +197,20 @@ export default function ArticlePage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Moonworks Gift Footer & Credit */}
-        <footer className="mt-16 pt-8 border-t border-[#d0beaa] text-center">
-          <div className="inline-flex flex-col items-center gap-2 p-5 rounded-2xl bg-[#eee4d6]/80 border border-[#d6c3ad] max-w-lg shadow-sm">
-            <div className="flex items-center gap-1.5 text-xs text-amber-900 font-medium">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>moonworks.com.tr Hediyesidir</span>
-            </div>
-            <p className="text-xs text-[#6e533d] font-serif leading-relaxed">
-              Bu dijital kitaplık ve okuma alanı, arkadaşımız Mert Kip&apos;in edebi yazıları için{" "}
-              <a
-                href="https://moonworks.com.tr"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-amber-900 underline hover:text-amber-950"
-              >
-                moonworks.com.tr
-              </a>{" "}
-              tarafından sevgiyle tasarlanıp kodlanmıştır.
-            </p>
-          </div>
+        {/* Footer Note */}
+        <footer className="mt-16 pt-8 border-t border-[#d8c8b4]/60 text-center">
+          <p className="text-xs text-[#7d5f47] font-serif leading-relaxed">
+            Bu dijital kitaplık{" "}
+            <a
+              href="https://moonworks.com.tr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-900 hover:text-amber-950 underline underline-offset-2 font-medium"
+            >
+              moonworks.com.tr
+            </a>{" "}
+            tarafından Mert Kip&apos;in edebi yazıları için sevgiyle tasarlanıp kodlanmıştır.
+          </p>
         </footer>
       </article>
     </div>

@@ -80,13 +80,7 @@ export const PastoralBackground = () => {
       {/* Second soft warm amber glow */}
       <div className="absolute top-1/4 right-0 w-[500px] h-[500px] rounded-full bg-amber-200/10 blur-3xl" />
 
-      {/* Subtle Vintage Typewriter Silhouette in the corner */}
-      <div className="absolute bottom-6 right-8 opacity-[0.04] text-neutral-900 select-none">
-        <svg width="220" height="180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-          <rect x="2" y="4" width="20" height="16" rx="2" />
-          <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8" />
-        </svg>
-      </div>
+
 
       {/* Floating dust motes in sunbeam */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />

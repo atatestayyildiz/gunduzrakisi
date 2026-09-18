@@ -26,11 +26,13 @@ export const ShelfOrganizer = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Group books into shelves of 5
+  // Group books into shelves of 5 (En az 2 raf mutlaka gösterilir)
   const SHELF_SIZE = 5;
+  const MIN_SHELVES = 2;
+  const totalShelvesCount = Math.max(MIN_SHELVES, Math.ceil(articles.length / SHELF_SIZE));
   const shelves: BookArticle[][] = [];
-  for (let i = 0; i < articles.length; i += SHELF_SIZE) {
-    shelves.push(articles.slice(i, i + SHELF_SIZE));
+  for (let i = 0; i < totalShelvesCount; i++) {
+    shelves.push(articles.slice(i * SHELF_SIZE, (i + 1) * SHELF_SIZE));
   }
 
   const handleDragStart = (globalIndex: number) => {
@@ -144,67 +146,75 @@ export const ShelfOrganizer = ({
 
             {/* Grid of 5 books per shelf */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end min-h-[260px]">
-              {shelf.map((book, bIdx) => {
-                const globalIndex = sIdx * SHELF_SIZE + bIdx;
-                const isDragging = draggedIndex === globalIndex;
-                const isOver = dragOverIndex === globalIndex;
+              {shelf.length > 0 ? (
+                shelf.map((book, bIdx) => {
+                  const globalIndex = sIdx * SHELF_SIZE + bIdx;
+                  const isDragging = draggedIndex === globalIndex;
+                  const isOver = dragOverIndex === globalIndex;
 
-                return (
-                  <div
-                    key={book.id}
-                    draggable={!isLocked}
-                    onDragStart={() => handleDragStart(globalIndex)}
-                    onDragOver={(e) => handleDragOver(e, globalIndex)}
-                    onDrop={() => handleDrop(globalIndex)}
-                    className={`flex flex-col items-center justify-end p-2 rounded-xl transition-all ${
-                      !isLocked ? "cursor-grab active:cursor-grabbing hover:bg-white/30" : ""
-                    } ${isDragging ? "opacity-30 scale-95" : "opacity-100"} ${
-                      isOver ? "border-2 border-dashed border-amber-600 bg-amber-500/10 scale-105" : ""
-                    }`}
-                  >
-                    {!isLocked && (
-                      <div className="flex items-center justify-between w-full mb-2 px-1">
-                        <div className="p-1 rounded bg-[#3f220d] text-amber-200">
-                          <GripVertical className="w-3.5 h-3.5" />
+                  return (
+                    <div
+                      key={book.id}
+                      draggable={!isLocked}
+                      onDragStart={() => handleDragStart(globalIndex)}
+                      onDragOver={(e) => handleDragOver(e, globalIndex)}
+                      onDrop={() => handleDrop(globalIndex)}
+                      className={`flex flex-col items-center justify-end p-2 rounded-xl transition-all ${
+                        !isLocked ? "cursor-grab active:cursor-grabbing hover:bg-white/30" : ""
+                      } ${isDragging ? "opacity-30 scale-95" : "opacity-100"} ${
+                        isOver ? "border-2 border-dashed border-amber-600 bg-amber-500/10 scale-105" : ""
+                      }`}
+                    >
+                      {!isLocked && (
+                        <div className="flex items-center justify-between w-full mb-2 px-1">
+                          <div className="p-1 rounded bg-[#3f220d] text-amber-200">
+                            <GripVertical className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => onEditArticle(book)}
+                              title="Düzenle"
+                              className="p-1 rounded bg-amber-100 text-amber-900 hover:bg-white"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteArticle(book.id)}
+                              title="Sil"
+                              className="p-1 rounded bg-rose-100 text-rose-900 hover:bg-rose-200"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => onEditArticle(book)}
-                            title="Düzenle"
-                            className="p-1 rounded bg-amber-100 text-amber-900 hover:bg-white"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onDeleteArticle(book.id)}
-                            title="Sil"
-                            className="p-1 rounded bg-rose-100 text-rose-900 hover:bg-rose-200"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      )}
 
-                    <Book
-                      title={book.title}
-                      variant={book.variant}
-                      color={book.coverColor}
-                      textColor={book.textColor}
-                      textured={book.textured}
-                      coverImage={book.coverImage}
-                      heightRatio={book.heightRatio || 1}
-                      width={130}
-                    />
+                      <Book
+                        title={book.title}
+                        variant={book.variant}
+                        color={book.coverColor}
+                        textColor={book.textColor}
+                        textured={book.textured}
+                        coverImage={book.coverImage}
+                        heightRatio={book.heightRatio || 1}
+                        width={130}
+                      />
 
-                    <span className="text-[11px] font-serif font-medium text-center text-[#432712] mt-2 line-clamp-1 w-full">
-                      {book.title}
-                    </span>
-                  </div>
-                );
-              })}
+                      <span className="text-[11px] font-serif font-medium text-center text-[#432712] mt-2 line-clamp-1 w-full">
+                        {book.title}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full h-full flex flex-col items-center justify-center py-12 text-center">
+                  <span className="font-serif italic text-xs text-amber-900/50">
+                    Bu raf henüz boş • Daktilo ile yazdığınız yeni denemeler buraya eklenecektir
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Oak plank bottom edge */}

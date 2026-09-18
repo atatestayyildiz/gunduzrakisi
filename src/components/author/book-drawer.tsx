@@ -13,7 +13,12 @@ import {
   Sparkles,
   Layers,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Edit,
+  Trash2,
+  Check,
+  Calendar,
+  FileText
 } from "lucide-react";
 
 interface BookDrawerProps {
@@ -24,6 +29,11 @@ interface BookDrawerProps {
   onCategoryChange: (cat: string) => void;
   categories: CategoryItem[];
   onAddCategory: (name: string) => void;
+  onUpdateCategory?: (id: string, name: string) => void;
+  onDeleteCategory?: (id: string) => void;
+  date?: string;
+  onDateChange?: (date: string) => void;
+  onSaveAsDraft?: () => void;
   coverColor: string;
   onCoverColorChange: (color: string) => void;
   textColor: string;
@@ -34,14 +44,15 @@ interface BookDrawerProps {
   onTexturedChange: (val: boolean) => void;
   coverImage?: string;
   onCoverImageChange: (img: string) => void;
-  heightRatio: number;
-  onHeightRatioChange: (ratio: number) => void;
+
   musicTitle: string;
   onMusicTitleChange: (v: string) => void;
   musicArtist: string;
   onMusicArtistChange: (v: string) => void;
   musicUrl: string;
   onMusicUrlChange: (v: string) => void;
+  musicCover: string;
+  onMusicCoverChange: (v: string) => void;
   sips: number;
   readTimeMinutes: number;
   onSaveToShelf: () => void;
@@ -67,6 +78,11 @@ export const BookDrawer = ({
   onCategoryChange,
   categories,
   onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+  date = "",
+  onDateChange,
+  onSaveAsDraft,
   coverColor,
   onCoverColorChange,
   textColor,
@@ -77,14 +93,14 @@ export const BookDrawer = ({
   onTexturedChange,
   coverImage,
   onCoverImageChange,
-  heightRatio,
-  onHeightRatioChange,
   musicTitle,
   onMusicTitleChange,
   musicArtist,
   onMusicArtistChange,
   musicUrl,
   onMusicUrlChange,
+  musicCover,
+  onMusicCoverChange,
   sips,
   readTimeMinutes,
   onSaveToShelf,
@@ -92,6 +108,9 @@ export const BookDrawer = ({
 }: BookDrawerProps) => {
   const [newCatName, setNewCatName] = useState("");
   const [showNewCatInput, setShowNewCatInput] = useState(false);
+  const [showManageCategories, setShowManageCategories] = useState(false);
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editingCatName, setEditingCatName] = useState("");
 
   const handleAddCat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,59 +123,101 @@ export const BookDrawer = ({
 
   return (
     <>
-      {/* Brass / Leather Vintage Drawer Pull Handle on the Right Edge */}
-      <div
-        onClick={onToggle}
-        title="Kitap Cildi & Raf Ayarları Çekmecesi"
-        className={`fixed right-0 top-1/2 -translate-y-1/2 z-40 cursor-pointer flex items-center transition-all duration-300 ${
-          isOpen ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
-        }`}
-      >
-        <div className="flex items-center gap-1.5 py-4 px-2.5 rounded-l-2xl bg-[#4a2810] hover:bg-[#5e3415] text-[#fce8d5] shadow-2xl border-y border-l border-[#c48d5d]/50 group">
-          <ChevronLeft className="w-4 h-4 text-amber-300 group-hover:-translate-x-0.5 transition-transform" />
-          <div className="flex flex-col items-center gap-1">
-            <Bookmark className="w-4 h-4 text-amber-300" />
-            <span
-              className="text-[11px] font-serif font-bold tracking-widest uppercase writing-mode-vertical"
-              style={{ writingMode: "vertical-rl" }}
-            >
-              Çekmece
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Backdrop overlay on mobile */}
+      {/* Backdrop overlay on mobile & background dimming */}
       {isOpen && (
         <div
           onClick={onToggle}
-          className="fixed inset-0 bg-black/40 backdrop-blur-2xs z-40 lg:hidden"
+          className="fixed inset-0 bg-black/45 backdrop-blur-2xs z-40 transition-opacity duration-300"
         />
       )}
 
-      {/* Sliding Drawer Container */}
-      <aside
-        className={`fixed top-0 right-0 h-full w-full max-w-[420px] bg-[#f8f4ec] border-l-2 border-[#d5c2ad] shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out overflow-y-auto ${
+      {/* Unified Sliding Drawer Assembly: Kulp ve çekmece gövdesi tek bir fiziksel parça olarak kayar */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-[440px] z-50 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Drawer Header with Wood Plank Finish */}
-        <div className="oak-wood-beam px-6 py-4 flex items-center justify-between text-white border-b border-black/30 sticky top-0 z-10">
-          <div className="flex items-center gap-2">
-            <Bookmark className="w-4 h-4 text-amber-300" />
-            <h2 className="font-serif font-bold text-lg text-amber-100">Kitap Cildi & Raf Ayarları</h2>
-          </div>
-          <button
-            onClick={onToggle}
-            className="p-1 rounded-lg text-amber-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        {/* Çekmece Ahşap Montaj Kulakçığı / Çıkıntısı (Ölçü dengelendi) */}
+        <div
+          onClick={onToggle}
+          role="button"
+          tabIndex={0}
+          title={isOpen ? "Çekmeceyi Kapat" : "Cilt & Raf Çekmecesini Çek"}
+          className="absolute -left-8 sm:-left-9 top-1/2 -translate-y-1/2 w-9 sm:w-10 h-50 sm:h-58 rounded-l-2xl border-y-2 border-l-2 border-[#1c0c03] shadow-[-11px_6px_26px_rgba(0,0,0,0.85)] cursor-pointer group z-40"
+          style={{
+            backgroundColor: "#361b09",
+            backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(255,255,255,0.06) 25%, rgba(0,0,0,0.3) 100%), url('/textures/oak_wood.jpg')`,
+            backgroundSize: "260px auto",
+          }}
+        >
+          {/* Ahşap gölgeleri ve ahşap pah efekti */}
+          <div className="absolute inset-0 rounded-l-2xl bg-gradient-to-b from-black/30 via-transparent to-black/50 pointer-events-none" />
         </div>
 
-        <div className="p-6 space-y-6 flex-1 text-sm text-[#3b2413]">
-          {/* Live 3D Book Preview */}
-          <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#eee4d6]/70 border border-[#d6c3ad] shadow-inner">
+        {/* Gerçek Vintage Pirinç / Döküm Çekmece Kulbu (Tutamaç sola bakacak şekilde konumlandırıldı) */}
+        <div
+          onClick={onToggle}
+          role="button"
+          tabIndex={0}
+          title={isOpen ? "Çekmeceyi Kapat" : "Cilt & Raf Çekmecesini Çek"}
+          className="absolute -left-16 sm:-left-20 top-1/2 -translate-y-1/2 cursor-pointer select-none group z-50 focus:outline-hidden"
+        >
+          {/* Ornate Drop Bail Handle with realistic drop shadow */}
+          <div className="relative flex items-center justify-center p-2">
+            {/* The physical antique handle cutout from the user image, rotated 90deg so the bail loop pulls LEFT */}
+            <div className="relative w-16 sm:w-20 h-44 sm:h-52 flex items-center justify-center">
+              <img
+                src="/textures/kulp.png"
+                alt="Antika Çekmece Kulbu"
+                className="w-44 sm:w-52 h-auto max-w-none rotate-90 origin-center drop-shadow-[-12px_8px_18px_rgba(0,0,0,0.85)] filter group-hover:brightness-105 transition-all duration-200 pointer-events-none select-none"
+              />
+            </div>
+
+            {/* Subtle vintage brass directional tag when hovered */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              <div className="px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-serif text-amber-200 border border-amber-600/40 whitespace-nowrap shadow-lg">
+                {isOpen ? "Kapat" : "Çek"}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sliding Drawer Container (Eski Meşe Ağacı Çekmece Gövdesi) */}
+        <aside
+          className="w-full h-full flex flex-col border-l-4 border-[#241307] shadow-[-25px_0_50px_rgba(0,0,0,0.9)] overflow-y-auto no-scrollbar relative"
+          style={{
+            backgroundColor: "#3a1e0b",
+            backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.55) 0%, rgba(30, 15, 7, 0.35) 50%, rgba(0, 0, 0, 0.7) 100%), url('/textures/oak_wood.jpg')`,
+            backgroundSize: "500px auto",
+          }}
+        >
+          {/* Drawer Header with Heavy Oak Plank Finish & Brass Trim */}
+          <div className="oak-shelf-front px-6 py-4 flex items-center justify-between text-white border-b-2 border-[#241307] sticky top-0 z-10 shadow-md">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-[#241307] border border-[#a87d29]/50 shadow-inner">
+                <Bookmark className="w-4 h-4 text-amber-300" />
+              </div>
+              <div>
+                <h2 className="font-serif font-bold text-base sm:text-lg text-amber-100 tracking-wide">
+                  Cilt & Raf Çekmecesi
+                </h2>
+                <p className="text-[11px] font-serif italic text-amber-200/70">
+                  Masif meşe ağacı cilt sandığı
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onToggle}
+              className="p-1.5 rounded-xl text-amber-200 hover:text-white bg-[#241307]/80 hover:bg-[#241307] border border-[#a87d29]/40 transition-colors cursor-pointer"
+              title="Çekmeceyi Kapat"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="p-5 sm:p-6 space-y-5 flex-1 text-sm text-[#3b2413]">
+            {/* Live 3D Book Preview (Çekmece içi Kadife/Parchment Tepsi) */}
+            <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#efe4d2]/95 border border-[#c4ab8f] shadow-[inset_0_2px_8px_rgba(0,0,0,0.12),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs">
             <span className="text-xs font-serif italic text-[#755338] mb-4">
               Canlı Kitap Önizlemesi
             </span>
@@ -168,7 +229,6 @@ export const BookDrawer = ({
                 textColor={textColor}
                 textured={textured}
                 coverImage={coverImage}
-                heightRatio={heightRatio}
                 width={160}
               />
             </div>
@@ -180,7 +240,7 @@ export const BookDrawer = ({
           </div>
 
           {/* Cilt Tipi (Variant) */}
-          <div className="space-y-2">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
             <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-amber-800" />
               <span>Kapak Tasarım Modeli</span>
@@ -212,7 +272,7 @@ export const BookDrawer = ({
           </div>
 
           {/* Renk Seçimi */}
-          <div className="space-y-2">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
             <label className="font-serif font-semibold text-[#4a2b13] flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Palette className="w-4 h-4 text-amber-800" />
@@ -252,7 +312,7 @@ export const BookDrawer = ({
           </div>
 
           {/* Metin Rengi & Doku */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-serif font-semibold text-[#4a2b13] mb-1">
                 Yazı Rengi
@@ -297,25 +357,8 @@ export const BookDrawer = ({
             </div>
           </div>
 
-          {/* Kitap Boy Varyasyonu (Organik Raflar) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-serif">
-              <span className="font-semibold text-[#4a2b13]">Kitap Boy Oranı (Organik Raf Farkı)</span>
-              <span className="text-amber-900">{heightRatio.toFixed(2)}x</span>
-            </div>
-            <input
-              type="range"
-              min="0.92"
-              max="1.08"
-              step="0.02"
-              value={heightRatio}
-              onChange={(e) => onHeightRatioChange(parseFloat(e.target.value))}
-              className="w-full accent-amber-800 cursor-pointer"
-            />
-          </div>
-
           {/* Kapak Görseli (Opsiyonel) */}
-          <div className="space-y-1.5">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-1.5">
             <label className="block text-xs font-serif font-semibold text-[#4a2b13]">
               Özel Kapak Görseli URL (Opsiyonel)
             </label>
@@ -328,56 +371,217 @@ export const BookDrawer = ({
             />
           </div>
 
-          {/* Kategori Seçimi */}
-          <div className="space-y-2">
-            <label className="font-serif font-semibold text-[#4a2b13] flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
+          {/* Kategori Seçimi & Yönetimi */}
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <FolderPlus className="w-4 h-4 text-amber-800" />
                 <span>Kategori</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowNewCatInput(!showNewCatInput)}
-                className="text-[11px] text-amber-900 underline hover:text-amber-950 cursor-pointer"
-              >
-                {showNewCatInput ? "Vazgeç" : "+ Yeni Kategori"}
-              </button>
-            </label>
+              </label>
 
+              <div className="flex items-center gap-2 text-[11px] font-serif">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowManageCategories(!showManageCategories);
+                    setShowNewCatInput(false);
+                  }}
+                  className={`underline cursor-pointer transition-colors ${
+                    showManageCategories ? "text-amber-950 font-bold" : "text-amber-800 hover:text-amber-950"
+                  }`}
+                >
+                  {showManageCategories ? "Tamamla" : "Düzenle / Sil"}
+                </button>
+                <span className="text-amber-900/30">|</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewCatInput(!showNewCatInput);
+                    setShowManageCategories(false);
+                  }}
+                  className="text-amber-800 underline hover:text-amber-950 cursor-pointer"
+                >
+                  {showNewCatInput ? "Vazgeç" : "+ Yeni"}
+                </button>
+              </div>
+            </div>
+
+            {/* Yeni Kategori Ekleme Alanı */}
             {showNewCatInput && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 p-2 rounded-xl bg-amber-900/5 border border-[#d8c7b4]">
                 <input
                   type="text"
                   placeholder="Yeni kategori adı..."
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
-                  className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-[#d8c7b4] text-xs"
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs focus:outline-hidden focus:ring-1 focus:ring-amber-800"
+                  autoFocus
                 />
                 <button
                   type="button"
                   onClick={handleAddCat}
-                  className="px-3 py-1.5 rounded-xl bg-[#4a2810] text-amber-100 text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-[#4a2810] hover:bg-[#5e3415] text-amber-100 text-xs font-medium transition-colors cursor-pointer"
                 >
                   Ekle
                 </button>
               </div>
             )}
 
+            {/* Kategorileri Yönetme (Düzenleme & Silme) Listesi */}
+            {showManageCategories && (
+              <div className="space-y-1.5 p-2.5 rounded-xl bg-amber-900/5 border border-[#d8c7b4] max-h-56 overflow-y-auto">
+                <div className="text-[11px] font-serif italic text-[#7a593e] mb-1">
+                  Kategori ismini değiştirebilir veya silebilirsiniz:
+                </div>
+                {categories
+                  .filter((c) => c.id !== "all")
+                  .map((cat) => (
+                    <div
+                      key={cat.id}
+                      className="flex items-center justify-between gap-1.5 p-1.5 px-2 rounded-lg bg-white border border-[#d8c7b4] shadow-xs text-xs"
+                    >
+                      {editingCatId === cat.id ? (
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <input
+                            type="text"
+                            value={editingCatName}
+                            onChange={(e) => setEditingCatName(e.target.value)}
+                            className="flex-1 px-2 py-0.5 rounded border border-amber-800 text-xs bg-white focus:outline-hidden"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editingCatName.trim() && onUpdateCategory) {
+                                onUpdateCategory(cat.id, editingCatName.trim());
+                                setEditingCatId(null);
+                              }
+                            }}
+                            className="p-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
+                            title="Kaydet"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCatId(null)}
+                            className="p-1 rounded bg-stone-500 hover:bg-stone-600 text-white cursor-pointer"
+                            title="İptal"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="font-serif font-medium text-[#4a2b13] truncate">
+                            {cat.name}
+                          </span>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCatId(cat.id);
+                                setEditingCatName(cat.name);
+                              }}
+                              className="p-1 rounded hover:bg-amber-100 text-amber-800 transition-colors cursor-pointer"
+                              title="İsmi Düzenle"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onDeleteCategory) {
+                                  onDeleteCategory(cat.id);
+                                }
+                              }}
+                              className="p-1 rounded hover:bg-rose-100 text-rose-800 transition-colors cursor-pointer"
+                              title="Kategoriyi Sil"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Kategori Seçim Kutusu */}
             <select
               value={category}
               onChange={(e) => onCategoryChange(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs focus:outline-hidden focus:ring-2 focus:ring-amber-800/40 cursor-pointer"
             >
-              {categories.filter((c) => c.id !== "all").map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {categories
+                .filter((c) => c.id !== "all")
+                .map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
             </select>
           </div>
 
+          {/* Yazı Tarihi (Blogspot ve Geçmiş Yazılar için) */}
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-amber-800" />
+                <span>Yazı Tarihi</span>
+              </label>
+              {onDateChange && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const todayStr = new Date().toLocaleDateString("tr-TR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric"
+                    });
+                    onDateChange(todayStr);
+                  }}
+                  className="text-[11px] font-serif text-amber-800 hover:text-amber-950 underline cursor-pointer"
+                >
+                  Bugün Yap
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Örn: 14 Eylül 2012"
+                value={date}
+                onChange={(e) => onDateChange?.(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs font-serif focus:outline-hidden focus:ring-2 focus:ring-amber-800/40"
+              />
+              <input
+                type="date"
+                title="Takvimden Tarih Seç"
+                onChange={(e) => {
+                  if (e.target.value && onDateChange) {
+                    const [y, m, d] = e.target.value.split("-").map(Number);
+                    const dObj = new Date(y, m - 1, d);
+                    onDateChange(
+                      dObj.toLocaleDateString("tr-TR", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric"
+                      })
+                    );
+                  }
+                }}
+                className="w-9 h-9 p-1 rounded-xl bg-white border border-[#d8c7b4] text-xs cursor-pointer text-amber-900"
+              />
+            </div>
+            <p className="text-[10px] font-serif italic text-amber-900/70">
+              Blogspot veya arşiv yazılarınız için dilediğiniz geçmiş tarihi yazabilir veya takvimden seçebilirsiniz.
+            </p>
+          </div>
+
           {/* Müzik Eşlikçisi (Opsiyonel) */}
-          <div className="space-y-2 p-3.5 rounded-xl bg-[#ede4d5]/60 border border-[#d8c7b3]">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
             <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
               <Music className="w-4 h-4 text-amber-800" />
               <span>Yazının Şarkısı (Opsiyonel)</span>
@@ -399,28 +603,51 @@ export const BookDrawer = ({
               />
               <input
                 type="text"
-                placeholder="Spotify / Müzik Linki"
+                placeholder="YouTube linki (youtube.com/watch?v=... veya youtu.be/...)"
                 value={musicUrl}
                 onChange={(e) => onMusicUrlChange(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
               />
+              <input
+                type="text"
+                placeholder="Albüm Kapağı URL (opsiyonel — boşsa YouTube'dan otomatik alınır)"
+                value={musicCover}
+                onChange={(e) => onMusicCoverChange(e.target.value)}
+                className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs"
+              />
+              <p className="text-[10px] font-serif italic text-amber-900/60">
+                YouTube Music linkini de kullanabilirsiniz. Kapak görseli belirtilmezse YouTube&apos;un küçük resmi otomatik kullanılır.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Drawer Footer Action Button */}
-        <div className="p-5 border-t border-[#d8c7b4] bg-[#efe8dc] sticky bottom-0 z-10">
+        {/* Drawer Footer Action Buttons */}
+        <div className="p-4 sm:p-5 border-t-2 border-[#241307] bg-[#2a1406] sticky bottom-0 z-10 shadow-[0_-8px_25px_rgba(0,0,0,0.6)] space-y-2">
           <button
             type="button"
             onClick={onSaveToShelf}
             disabled={isSaving}
-            className="w-full py-3.5 px-4 rounded-xl bg-[#3f220d] hover:bg-[#593114] text-amber-100 font-serif font-bold text-sm tracking-wide shadow-lg border border-[#c48d5d]/40 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#4d2810] via-[#753d16] to-[#3a1d0a] hover:from-[#5e3113] hover:to-[#47240d] text-[#faedd9] font-serif font-bold text-sm tracking-wide shadow-xl border border-[#d4af37]/60 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>{isSaving ? "Rafa Diziliyor..." : "Kitabı Rafa Yerleştir"}</span>
+            <span>{isSaving ? "Rafa Diziliyor..." : "Ciltle & Rafa Diz (Yayınla)"}</span>
           </button>
+
+          {onSaveAsDraft && (
+            <button
+              type="button"
+              onClick={onSaveAsDraft}
+              disabled={isSaving}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#1c0d04] hover:bg-[#2d1607] text-amber-200/90 hover:text-amber-100 font-serif font-semibold text-xs transition-all border border-amber-900/60 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-400" />
+              <span>Taslak Olarak Sakla (Sonra Devam Et)</span>
+            </button>
+          )}
         </div>
       </aside>
-    </>
-  );
+    </div>
+  </>
+);
 };

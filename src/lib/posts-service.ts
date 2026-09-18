@@ -13,8 +13,8 @@ import {
 import { BookArticle, CategoryItem } from "./types";
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES } from "./initial-data";
 
-const LOCAL_STORAGE_ARTICLES_KEY = "gunduz_rakisi_articles_v2";
-const LOCAL_STORAGE_CATEGORIES_KEY = "gunduz_rakisi_categories_v2";
+const LOCAL_STORAGE_ARTICLES_KEY = "gunduz_rakisi_articles_v5";
+const LOCAL_STORAGE_CATEGORIES_KEY = "gunduz_rakisi_categories_v5";
 
 /**
  * Gets all articles sorted by order.
@@ -40,10 +40,16 @@ export async function getArticles(): Promise<BookArticle[]> {
   // 2. Try LocalStorage
   if (typeof window !== "undefined") {
     try {
+      // Clean up any legacy mock stores
+      localStorage.removeItem("gunduz_rakisi_articles_v1");
+      localStorage.removeItem("gunduz_rakisi_articles_v2");
+      localStorage.removeItem("gunduz_rakisi_articles_v3");
+      localStorage.removeItem("gunduz_rakisi_articles_v4");
+
       const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as BookArticle[];
-        if (parsed && parsed.length > 0) {
+        if (parsed) {
           return parsed.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         }
       }
@@ -52,7 +58,7 @@ export async function getArticles(): Promise<BookArticle[]> {
     }
   }
 
-  // 3. Fallback to initial seed articles
+  // 3. Fallback to initial seed articles (now completely empty)
   return INITIAL_ARTICLES.sort((a, b) => a.order - b.order);
 }
 
@@ -158,5 +164,29 @@ export async function saveCategory(category: CategoryItem): Promise<void> {
       const updated = [...categories, category];
       localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
     }
+  }
+}
+
+/**
+ * Updates an existing category name.
+ */
+export async function updateCategory(id: string, newName: string): Promise<void> {
+  if (typeof window !== "undefined") {
+    const categories = await getCategories();
+    const updated = categories.map((c) =>
+      c.id === id ? { ...c, name: newName.trim() } : c
+    );
+    localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
+  }
+}
+
+/**
+ * Deletes a category by id.
+ */
+export async function deleteCategory(id: string): Promise<void> {
+  if (typeof window !== "undefined") {
+    const categories = await getCategories();
+    const updated = categories.filter((c) => c.id !== id);
+    localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
   }
 }

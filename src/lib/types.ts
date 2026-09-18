@@ -15,7 +15,8 @@ export interface BookArticle {
   coverImage?: string;
   musicTitle?: string;
   musicArtist?: string;
-  musicUrl?: string;
+  musicUrl?: string;   // Direkt .mp3 / ses dosyası URL'si
+  musicCover?: string; // Albüm kapağı görseli URL'si (opsiyonel)
   order: number;
   heightRatio?: number; // 0.92 to 1.08 for natural variety on shelf
   isDraft?: boolean;

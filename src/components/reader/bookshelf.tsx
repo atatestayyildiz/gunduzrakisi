@@ -90,16 +90,9 @@ export const Bookshelf = ({ articles }: BookshelfProps) => {
                           </span>
                           <div className="w-8 h-px bg-amber-500/50" />
                         </div>
-                        <p className="font-serif text-xs sm:text-sm text-[#faebd7]/90 max-w-md drop-shadow-xs mb-3">
-                          Yazar Odası&apos;na geçerek antika daktilo ile ilk denemenizi yazabilir, ciltleyip bu rafa dizebilirsiniz.
+                        <p className="font-serif text-xs sm:text-sm text-[#faebd7]/90 max-w-md drop-shadow-xs">
+                          Mert Kip&apos;in edebi yazıları ve denemeleri yakında bu raflarda yerini alacak.
                         </p>
-                        <a
-                          href="/yazar"
-                          className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-[#4d2810] via-[#6d3714] to-[#3a1d0a] hover:from-[#5e3113] hover:to-[#47240d] text-[#faedd9] font-serif font-semibold text-xs shadow-lg border border-[#d4af37]/50 hover:border-amber-300 transition-all hover:scale-105 cursor-pointer"
-                        >
-                          <span>Yazar Odası&apos;na Git & Deneme Yaz</span>
-                          <span className="text-amber-300">→</span>
-                        </a>
                       </div>
                     ) : shelfIndex === 0 && articles.length > 0 ? (
                       <div className="flex flex-col items-center justify-center">

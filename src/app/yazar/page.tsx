@@ -32,7 +32,9 @@ import {
   Save,
   Calendar,
   FileText,
-  Trash2
+  Trash2,
+  KeyRound,
+  LogOut
 } from "lucide-react";
 
 export default function WriterPage() {
@@ -67,6 +69,9 @@ export default function WriterPage() {
   const [musicCover, setMusicCover] = useState("");
 
   // UI states
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [passcode, setPasscode] = useState("");
+  const [passError, setPassError] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -126,6 +131,38 @@ export default function WriterPage() {
       }
     }
   }, [paperFeedScroll, activeTab, content.length]);
+
+  useEffect(() => {
+    const auth = localStorage.getItem("gunduz_rakisi_author_auth");
+    if (auth === "granted") {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  const handleAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = passcode.trim().toLowerCase();
+    const envPass = (process.env.NEXT_PUBLIC_AUTHOR_PASSCODE || "").trim().toLowerCase();
+
+    // Kabul edilen şifreler: env'deki özel şifre, gunduzrakisi, mertkip, gunduz2026
+    const valid = [envPass, "gunduzrakisi", "mertkip", "gunduz2026"].filter(Boolean);
+
+    if (valid.includes(clean)) {
+      localStorage.setItem("gunduz_rakisi_author_auth", "granted");
+      setIsAuthenticated(true);
+      setPassError("");
+    } else {
+      setPassError("Geçersiz anahtar. Lütfen yazar şifrenizi kontrol ediniz.");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("gunduz_rakisi_author_auth");
+    setIsAuthenticated(false);
+    setPasscode("");
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -385,6 +422,110 @@ export default function WriterPage() {
 
   const { readTimeMinutes, sips } = calculateSips(content);
 
+  if (isAuthenticated === null) {
+    return (
+      <div
+        className="h-screen w-screen flex items-center justify-center"
+        style={{
+          backgroundColor: "#1c0c04",
+          backgroundImage: `url('/textures/oak_wood.jpg')`,
+          backgroundSize: "400px auto",
+        }}
+      >
+        <div className="font-serif italic text-amber-200/60 text-sm animate-pulse">
+          Yazar Odası hazırlanıyor...
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <div
+        className="min-h-screen w-screen relative flex items-center justify-center p-4 selection:bg-amber-800/20"
+        style={{
+          backgroundColor: "#1c0c04",
+          backgroundImage: `radial-gradient(ellipse at 50% 35%, rgba(212,175,55,0.09) 0%, transparent 70%), url('/textures/oak_wood.jpg')`,
+          backgroundSize: "400px auto",
+        }}
+      >
+        <div
+          className="w-full max-w-md p-8 sm:p-10 rounded-2xl border-2 border-[#a87d29]/50 shadow-[0_20px_60px_rgba(0,0,0,0.92)] text-center relative overflow-hidden backdrop-blur-md"
+          style={{
+            backgroundColor: "rgba(28, 12, 4, 0.95)",
+          }}
+        >
+          {/* Pirinç süs şerit */}
+          <div
+            className="absolute top-0 left-0 right-0 h-1"
+            style={{
+              background: "linear-gradient(90deg, transparent, #d4af37 30%, #f7df88 50%, #d4af37 70%, transparent)",
+            }}
+          />
+
+          {/* Mühür & Kilit Simgesi */}
+          <div
+            className="w-16 h-16 mx-auto mb-4 rounded-full border-2 border-[#d4af37]/60 flex items-center justify-center shadow-lg"
+            style={{
+              background: "radial-gradient(circle, #4a2108 0%, #1f0b02 100%)",
+            }}
+          >
+            <KeyRound className="w-7 h-7 text-amber-300 drop-shadow-md" />
+          </div>
+
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-amber-100 tracking-wide mb-1">
+            Gündüz Rakısı
+          </h1>
+          <p className="font-serif italic text-amber-400/80 text-xs tracking-widest uppercase mb-5">
+            Mert Kip — Yazar Odası
+          </p>
+
+          <p className="font-serif text-xs sm:text-sm text-[#e8cfb3]/85 leading-relaxed mb-6 px-2">
+            Bu çalışma odası yalnızca yazarın daktilo yazıları ve edebi üretimi için ayrılmıştır.
+          </p>
+
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
+            <div>
+              <input
+                type="password"
+                placeholder="Giriş Şifresi..."
+                value={passcode}
+                onChange={(e) => {
+                  setPasscode(e.target.value);
+                  setPassError("");
+                }}
+                className="w-full px-4 py-3 rounded-xl bg-[#120702] border border-[#a87d29]/40 text-amber-100 placeholder-amber-200/30 text-sm font-serif text-center tracking-widest focus:outline-none focus:border-amber-400 transition-colors shadow-inner"
+                autoFocus
+              />
+              {passError && (
+                <p className="text-rose-400 text-xs font-serif italic mt-2">
+                  {passError}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#6b3512] via-[#8c4617] to-[#54280b] hover:brightness-110 text-amber-100 text-xs font-serif font-semibold tracking-wider border border-[#d4af37]/60 shadow-lg cursor-pointer transition-all active:scale-[0.99]"
+            >
+              Odaya Gir & Daktiloyu Aç
+            </button>
+          </form>
+
+          <div className="mt-6 pt-4 border-t border-white/10">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-serif text-amber-400/60 hover:text-amber-300 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Kitaplığa Geri Dön</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen w-screen plaster-wall relative text-[#2d1b0f] flex flex-col overflow-hidden selection:bg-amber-800/20">
       {/* Pastoral Sunlight & Floating Dust Motes */}
@@ -406,6 +547,14 @@ export default function WriterPage() {
               <Feather className="w-4 h-4 text-amber-700" />
               <span>Mert Kip — Yazar Odası</span>
             </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-serif text-amber-900/70 hover:text-amber-950 hover:bg-[#e8ded0] transition-colors cursor-pointer ml-1"
+              title="Yazar Odasını Kilitle & Çıkış Yap"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Kilitle</span>
+            </button>
           </div>
 
           {/* Tab Switcher */}

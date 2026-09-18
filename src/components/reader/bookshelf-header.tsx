@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import { CategoryItem } from "@/lib/types";
-import { Feather, ChevronDown, Check, BookMarked } from "lucide-react";
+import { ChevronDown, Check, BookMarked } from "lucide-react";
 
 interface BookshelfHeaderProps {
   categories: CategoryItem[];
@@ -90,17 +89,6 @@ export const BookshelfHeader = ({
               </p>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
-              {/* Link to Writer Room */}
-              <Link
-                href="/yazar"
-                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2a1305]/90 hover:bg-[#3d1c07] border border-amber-600/50 text-amber-100 text-xs sm:text-sm font-serif font-medium transition-all shadow-lg hover:shadow-amber-950/60"
-              >
-                <Feather className="w-4 h-4 text-amber-300 group-hover:rotate-12 transition-transform" />
-                <span>Yazar Odası</span>
-              </Link>
-            </div>
           </div>
 
           {/* Categories Dropdown & Shelf Stats */}

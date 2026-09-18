@@ -14,8 +14,7 @@ import {
   Clock,
   Wine,
   Share2,
-  Check,
-  Feather
+  Check
 } from "lucide-react";
 
 interface PageProps {
@@ -108,13 +107,6 @@ export default function ArticlePage({ params }: PageProps) {
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Share2 className="w-3.5 h-3.5" />}
               <span>{copied ? "Kopyalandı!" : "Paylaş"}</span>
             </button>
-            <Link
-              href="/yazar"
-              className="p-1.5 rounded-lg text-amber-900 hover:bg-[#e7ded1] transition-colors"
-              title="Yazar Odası"
-            >
-              <Feather className="w-4 h-4" />
-            </Link>
           </div>
         </div>
       </nav>

@@ -218,15 +218,15 @@ export const BookDrawer = ({
 
         {/* Sliding Drawer Container (Eski Meşe Ağacı Çekmece Gövdesi) */}
         <aside
-          className="w-full h-full flex flex-col border-l-4 border-[#241307] shadow-[-25px_0_50px_rgba(0,0,0,0.9)] overflow-y-auto no-scrollbar relative"
+          className="w-full h-full flex flex-col border-l-4 border-[#241307] shadow-[-25px_0_50px_rgba(0,0,0,0.9)] overflow-hidden relative"
           style={{
             backgroundColor: "#3a1e0b",
             backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.55) 0%, rgba(30, 15, 7, 0.35) 50%, rgba(0, 0, 0, 0.7) 100%), url('/textures/oak_wood.jpg')`,
             backgroundSize: "500px auto",
           }}
         >
-          {/* Drawer Header with Heavy Oak Plank Finish & Brass Trim */}
-          <div className="oak-shelf-front px-6 py-4 flex items-center justify-between text-white border-b-2 border-[#241307] sticky top-0 z-10 shadow-md">
+          {/* Sabit Üst Başlık (Header) */}
+          <div className="shrink-0 oak-shelf-front px-6 py-4 flex items-center justify-between text-white border-b-2 border-[#241307] relative z-20 shadow-md select-none">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-[#241307] border border-[#a87d29]/50 shadow-inner">
                 <Bookmark className="w-4 h-4 text-amber-300" />
@@ -246,7 +246,8 @@ export const BookDrawer = ({
             </button>
           </div>
 
-          <div className="p-5 sm:p-6 pb-36 space-y-5 flex-1 text-sm text-[#3b2413]">
+          {/* Başlık ile Butonlar Arasında Kayan/Scroll Eden Bölüm */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 pb-8 space-y-5 text-sm text-[#3b2413] overscroll-contain no-scrollbar relative z-10">
             {/* Live 3D Book Preview (Çekmece içi Kadife/Parchment Tepsi) */}
             <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#efe4d2]/95 border border-[#c4ab8f] shadow-[inset_0_2px_8px_rgba(0,0,0,0.12),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs">
             <span className="text-xs font-serif italic text-[#755338] mb-4">
@@ -761,8 +762,14 @@ export const BookDrawer = ({
           </div>
         </div>
 
-        {/* Drawer Footer Action Buttons */}
-        <div className="p-4 sm:p-5 border-t-2 border-[#241307] bg-[#2a1406] sticky bottom-0 z-10 shadow-[0_-8px_25px_rgba(0,0,0,0.6)] space-y-2">
+        {/* Sabit & Tamamen Solid Alt Bölüm (Ciltle & Taslak Butonları) */}
+        <div
+          className="shrink-0 p-4 sm:p-5 border-t-2 border-[#241307] shadow-[0_-12px_30px_rgba(0,0,0,0.85)] space-y-2 relative z-20 select-none"
+          style={{
+            backgroundColor: "#200e05",
+            backgroundImage: `linear-gradient(to bottom, #241106 0%, #160802 100%)`,
+          }}
+        >
           <button
             type="button"
             onClick={onSaveToShelf}
@@ -778,7 +785,7 @@ export const BookDrawer = ({
               type="button"
               onClick={onSaveAsDraft}
               disabled={isSaving}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#1c0d04] hover:bg-[#2d1607] text-amber-200/90 hover:text-amber-100 font-serif font-semibold text-xs transition-all border border-amber-900/60 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#140802] hover:bg-[#220f04] text-amber-200/90 hover:text-amber-100 font-serif font-semibold text-xs transition-all border border-amber-900/60 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <FileText className="w-3.5 h-3.5 text-amber-400" />
               <span>Taslak Olarak Sakla (Sonra Devam Et)</span>

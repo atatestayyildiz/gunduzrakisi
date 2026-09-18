@@ -1,26 +1,123 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tw-animate-css";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-context-card-border: var(--context-card-border);
+  --color-amber-600: var(--ds-amber-600);
+  --color-gray-200: var(--ds-gray-200);
+  --color-gray-1000: var(--ds-gray-1000);
+  --color-gray-alpha-400: var(--ds-gray-alpha-400);
+  --color-background-200: var(--ds-background-200);
+  --color-book-bind: var(--ds-book-bind);
+  --shadow-book: var(--ds-shadow-book);
+  --shadow-book-border: var(--ds-shadow-book-border);
+  --font-serif: var(--font-garamond), Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --context-card-border: hsla(0, 0%, 92%, 1);
+  --ds-amber-600: oklch(80.25% 0.1953 73.59);
+  --ds-gray-200: hsla(0, 0%, 92%, 1);
+  --ds-gray-1000: hsla(0, 0%, 9%, 1);
+  --ds-gray-alpha-400: hsla(0, 0%, 0%, 0.08);
+  --ds-background-200: hsla(0, 0%, 98%, 1);
+  --ds-book-bind: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 12%, rgba(255, 255, 255, 0.25) 29.25%, rgba(255, 255, 255, 0) 50.5%, rgba(255, 255, 255, 0) 75.25%, rgba(255, 255, 255, 0.25) 91%, rgba(255, 255, 255, 0)), linear-gradient(90deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.1) 12%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.02) 50%, rgba(0, 0, 0, 0.2) 73.5%, rgba(0, 0, 0, 0.5) 75.25%, rgba(0, 0, 0, 0.15) 85.25%, rgba(0, 0, 0, 0));
+  --ds-shadow-book: 0 1px 1px 0 rgba(0, 0, 0, .02), 0 4px 8px -4px rgba(0, 0, 0, .1), 0 16px 24px -8px rgba(0, 0, 0, .03);
+  --ds-shadow-book-border: inset 0 1px 2px 0 rgba(255, 255, 255, .3);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Background Gradients & Textures */
+.bg-book-gradient {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.06) 100%);
+}
+
+/* Seamless rustic rural plaster wall pattern */
+.plaster-wall {
+  background-color: #f3eee6;
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(205, 190, 170, 0.25) 0px, transparent 60%),
+    radial-gradient(at 85% 80%, rgba(180, 160, 140, 0.2) 0px, transparent 65%),
+    radial-gradient(at 50% 50%, rgba(230, 220, 205, 0.3) 0px, transparent 70%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.055'/%3E%3C/svg%3E");
+}
+
+/* Real heavy oak wood furniture aesthetics */
+.oak-texture-surface {
+  background-color: #4a2912;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25)), url('/textures/oak_wood.jpg');
+  background-size: 600px auto;
+}
+
+.oak-shelf-top {
+  background-color: #5c3519;
+  background-image: linear-gradient(to right, rgba(0,0,0,0.4) 0%, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.12) 50%, rgba(0,0,0,0.4) 100%), url('/textures/oak_wood.jpg');
+  background-size: 500px auto;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.oak-shelf-front {
+  background-color: #3b1e0b;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.6) 100%), url('/textures/oak_wood.jpg');
+  background-size: 600px auto;
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.8),
+    0 18px 26px -6px rgba(0, 0, 0, 0.5),
+    0 8px 12px -3px rgba(0, 0, 0, 0.35);
+}
+
+.oak-side-pillar {
+  background-color: #3f200d;
+  background-image: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(255,255,255,0.1) 30%, rgba(0,0,0,0.4) 100%), url('/textures/oak_wood.jpg');
+  background-size: 400px auto;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.7);
+}
+
+.oak-backboard {
+  background-color: #2b1407;
+  background-image: 
+    linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 20%, rgba(0,0,0,0.45) 100%),
+    repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(0,0,0,0.3) 80px),
+    url('/textures/oak_wood.jpg');
+  background-size: auto, auto, 550px auto;
+}
+
+/* 3D Book Initial Stance & Hover Animation matching reference exactly */
+.book-rotate {
+  transform: rotateY(0deg) rotateX(0deg);
+  transform-origin: left center;
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.book-rotate:hover {
+  transform: rotateY(-20deg) rotateX(6deg) translateZ(10px);
+}
+
+/* Pastoral Sunbeam & Dust Motes for Writer Room */
+.sunbeam-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 245, 220, 0.35) 0%,
+    rgba(255, 235, 190, 0.15) 35%,
+    rgba(255, 225, 170, 0.04) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Smooth custom scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #ede6dc;
+}
+::-webkit-scrollbar-thumb {
+  background: #c2b19f;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a3907c;
 }

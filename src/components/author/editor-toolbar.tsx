@@ -8,10 +8,8 @@ import {
   Heading3,
   Quote,
   Minus,
-  List,
   Eraser,
   Type,
-  Pilcrow,
 } from "lucide-react";
 
 export interface EditorToolbarProps {
@@ -173,19 +171,6 @@ export function EditorToolbar({
           <Heading3 className="w-4 h-4" />
         </button>
 
-        {/* Normal Paragraph */}
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            exec("formatBlock", "p");
-          }}
-          title="Normal Paragraf"
-          className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
-        >
-          <Pilcrow className="w-4 h-4" />
-        </button>
-
         {/* Quote */}
         <button
           type="button"
@@ -197,19 +182,6 @@ export function EditorToolbar({
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Quote className="w-4 h-4" />
-        </button>
-
-        {/* List */}
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            exec("insertUnorderedList");
-          }}
-          title="Madde İmi Listesi"
-          className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
-        >
-          <List className="w-4 h-4" />
         </button>
 
         {/* Divider */}

@@ -754,7 +754,7 @@ export default function WriterPage() {
               <div className="mb-6">
                 <input
                   type="text"
-                  placeholder="Deneme Başlığı... (Örn: 'Eylül'ün Ankara Hali')"
+                  placeholder="Başlık Girin..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full font-serif text-2xl sm:text-4xl font-bold text-[#2d1808] placeholder-[#a68972]/60 bg-transparent border-b-2 border-transparent focus:border-amber-900/30 focus:outline-hidden pb-2"

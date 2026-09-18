@@ -19,7 +19,7 @@ export function RichEditor({
   onChange,
   fontFamily,
   fontSize,
-  placeholder = "Yazmaya başlayın... (Kalın ve İtalik için metni seçip üstteki butonlara basabilirsiniz)",
+  placeholder = "Yazmaya Başlayın...",
   editorRef,
   onAutoCleanNotice,
 }: RichEditorProps) {

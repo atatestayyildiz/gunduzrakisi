@@ -16,6 +16,7 @@ import {
   getMusicTracks,
   saveMusicTrack,
   deleteMusicTrack,
+  getAuthorPasscode,
 } from "@/lib/posts-service";
 import { cleanPastedText, calculateSips } from "@/lib/text-cleaner";
 import { slugify } from "@/lib/slug-utils";
@@ -24,6 +25,7 @@ import { BookDrawer } from "@/components/author/book-drawer";
 import { ShelfOrganizer } from "@/components/author/shelf-organizer";
 import { DeleteConfirmModal } from "@/components/author/delete-confirm-modal";
 import { AddMusicModal } from "@/components/author/add-music-modal";
+import { ChangePasswordModal } from "@/components/author/change-password-modal";
 import { SiteMusicPlayer } from "@/components/reader/site-music-player";
 import { EditorToolbar } from "@/components/author/editor-toolbar";
 import { RichEditor } from "@/components/author/rich-editor";
@@ -42,6 +44,7 @@ import {
   FileText,
   Trash2,
   KeyRound,
+  Key,
   LogOut
 } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
@@ -95,6 +98,7 @@ export default function WriterPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [passcode, setPasscode] = useState("");
   const [passError, setPassError] = useState("");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -156,15 +160,25 @@ export default function WriterPage() {
     }
   }, []);
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = passcode.trim().toLowerCase();
-    const envPass = (process.env.NEXT_PUBLIC_AUTHOR_PASSCODE || "").trim().toLowerCase();
+    const clean = passcode.trim();
+    const cleanLower = clean.toLowerCase();
+    const envPass = (process.env.NEXT_PUBLIC_AUTHOR_PASSCODE || "").trim();
 
-    // Kabul edilen şifreler: env'deki özel şifre, gunduzrakisi, mertkip, gunduz2026
-    const valid = [envPass, "gunduzrakisi", "mertkip", "gunduz2026"].filter(Boolean);
+    // Buluttan veya yerelden özel şifreyi sorgula
+    let customPass: string | null = null;
+    try {
+      customPass = await getAuthorPasscode();
+    } catch {}
 
-    if (valid.includes(clean)) {
+    const customClean = customPass ? customPass.trim() : null;
+
+    // Kabul edilen şifreler: özel şifre (varsa), env'deki şifre, ve kurtarma şifreleri
+    const validRaw = [customClean, envPass, "gunduzrakisi", "mertkip", "gunduz2026"].filter(Boolean) as string[];
+    const validLower = validRaw.map((p) => p.toLowerCase());
+
+    if (validRaw.includes(clean) || validLower.includes(cleanLower)) {
       localStorage.setItem("gunduz_rakisi_author_auth", "granted");
       setIsAuthenticated(true);
       setPassError("");
@@ -601,8 +615,16 @@ export default function WriterPage() {
               <span>Mert Kip | Yazar Odası</span>
             </div>
             <button
+              onClick={() => setShowPasswordModal(true)}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-serif text-amber-900/80 hover:text-amber-950 bg-[#e8ded0]/80 hover:bg-[#ded1c0] border border-[#d2c0aa] transition-all cursor-pointer ml-1"
+              title="Yazar Giriş Şifresini Değiştir"
+            >
+              <Key className="w-3.5 h-3.5 text-amber-800" />
+              <span className="hidden sm:inline text-[11px] font-medium">Şifre Değiştir</span>
+            </button>
+            <button
               onClick={handleLogout}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-serif text-amber-900/70 hover:text-amber-950 hover:bg-[#e8ded0] transition-colors cursor-pointer ml-1"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-serif text-amber-900/70 hover:text-amber-950 hover:bg-[#e8ded0] transition-colors cursor-pointer"
               title="Yazar Odasını Kilitle & Çıkış Yap"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -1077,6 +1099,16 @@ export default function WriterPage() {
         isDeleting={isDeleting}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Yazar Şifresi Değiştirme Modalı */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSuccess={() => {
+          setNotice("Yazar gizli anahtarınız başarıyla güncellendi!");
+          setTimeout(() => setNotice(null), 4000);
+        }}
       />
     </div>
   );

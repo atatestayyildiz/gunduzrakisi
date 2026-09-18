@@ -4,6 +4,7 @@ import { db, isFirebaseConfigured } from "./firebase";
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   deleteDoc,
@@ -359,4 +360,54 @@ export async function deleteMusicTrack(id: string): Promise<void> {
     localStorage.setItem(LOCAL_STORAGE_MUSIC_KEY, JSON.stringify(updated));
   }
 }
+
+const LOCAL_STORAGE_CUSTOM_PASSCODE_KEY = "gunduz_rakisi_custom_passcode";
+
+/**
+ * Gets the author custom passcode from Firestore (with LocalStorage fallback).
+ */
+export async function getAuthorPasscode(): Promise<string | null> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, "settings", "author_auth"));
+      if (snap.exists() && snap.data()?.passcode) {
+        const pass = String(snap.data().passcode).trim();
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_STORAGE_CUSTOM_PASSCODE_KEY, pass);
+        }
+        return pass;
+      }
+    } catch (err) {
+      console.warn("Firestore passcode fetch failed:", err);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    return localStorage.getItem(LOCAL_STORAGE_CUSTOM_PASSCODE_KEY);
+  }
+
+  return null;
+}
+
+/**
+ * Saves a new author custom passcode to Firestore and LocalStorage.
+ */
+export async function saveAuthorPasscode(newPasscode: string): Promise<void> {
+  const clean = newPasscode.trim();
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, "settings", "author_auth"), {
+        passcode: clean,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Firestore passcode save error:", err);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_STORAGE_CUSTOM_PASSCODE_KEY, clean);
+  }
+}
+
 

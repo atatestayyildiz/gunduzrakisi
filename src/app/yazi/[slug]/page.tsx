@@ -13,11 +13,11 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
-  Wine,
   Share2,
   Check,
   Feather
 } from "lucide-react";
+import { RakiGlass } from "@/components/icons/raki-glass";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -141,7 +141,7 @@ export default function ArticlePage({ params }: PageProps) {
 
             {/* Iconic "X Yudumda Okunur" indicator */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#fcf9f2] text-amber-900 border border-amber-800/30 shadow-xs">
-              <Wine className="w-3.5 h-3.5 text-amber-600" />
+              <RakiGlass className="w-3.5 h-3.5 text-amber-600" />
               <span>Bu yazı <strong className="font-bold text-amber-950">{article.sips} yudumda</strong> okunur</span>
             </div>
           </div>

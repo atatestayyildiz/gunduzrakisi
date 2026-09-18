@@ -24,6 +24,7 @@ import {
   ImageIcon,
   Loader2,
 } from "lucide-react";
+import { RakiGlass } from "@/components/icons/raki-glass";
 
 interface BookDrawerProps {
   isOpen: boolean;
@@ -258,7 +259,10 @@ export const BookDrawer = ({
             <div className="mt-4 flex items-center gap-2 text-xs font-serif text-amber-900 bg-white/70 px-3 py-1 rounded-full border border-[#d2c0aa]">
               <span>Okuma: ~{readTimeMinutes} dk</span>
               <span>•</span>
-              <strong className="font-semibold">{sips} yudumda biter</strong>
+              <span className="flex items-center gap-1 font-semibold">
+                <RakiGlass className="w-3 h-3 text-amber-800" />
+                <span>{sips} yudumda biter</span>
+              </span>
             </div>
           </div>
 

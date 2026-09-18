@@ -32,7 +32,6 @@ import {
   LayoutGrid,
   Edit,
   Eraser,
-  Wine,
   Save,
   Calendar,
   FileText,
@@ -40,6 +39,7 @@ import {
   KeyRound,
   LogOut
 } from "lucide-react";
+import { RakiGlass } from "@/components/icons/raki-glass";
 
 export default function WriterPage() {
   const router = useRouter();
@@ -724,7 +724,7 @@ export default function WriterPage() {
                     </span>
                   )}
                   <span className="flex items-center gap-1 bg-[#ede2d4] px-2.5 py-1 rounded-full">
-                    <Wine className="w-3.5 h-3.5 text-amber-700" />
+                    <RakiGlass className="w-3.5 h-3.5 text-amber-700" />
                     <span>~{sips} yudum ({readTimeMinutes} dk)</span>
                   </span>
                   {editingId && (

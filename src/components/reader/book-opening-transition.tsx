@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookArticle } from "@/lib/types";
 import { BookCover } from "@/components/ui/book";
-import { BookOpen, ArrowRight, X, Wine, Music } from "lucide-react";
+import { BookOpen, ArrowRight, X, Music } from "lucide-react";
+import { RakiGlass } from "@/components/icons/raki-glass";
 
 interface BookOpeningTransitionProps {
   article: BookArticle;
@@ -187,7 +188,7 @@ export const BookOpeningTransition = ({
               <div className="flex items-center justify-between border-b border-[#e2d5c3] pb-2.5 mb-3.5 text-xs font-serif text-[#8b6546]">
                 <span className="uppercase tracking-widest font-bold">Gündüz Rakısı</span>
                 <span className="flex items-center gap-1 text-amber-900 font-semibold bg-[#f4ece1] px-2 py-0.5 rounded-full">
-                  <Wine className="w-3.5 h-3.5 text-amber-700" />
+                  <RakiGlass className="w-3.5 h-3.5 text-amber-700" />
                   <span>{article.sips} yudumda</span>
                 </span>
               </div>

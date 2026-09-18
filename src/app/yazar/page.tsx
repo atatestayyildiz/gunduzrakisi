@@ -82,7 +82,6 @@ export default function WriterPage() {
     isDraft?: boolean;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const inTextImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // UI states
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -196,36 +195,6 @@ export default function WriterPage() {
     }
     setAutoCleanNotice(true);
     setTimeout(() => setAutoCleanNotice(false), 3000);
-  };
-
-  // Insert image: can choose a file (compressed to WebP) or enter URL
-  const handleInsertImage = () => {
-    inTextImageInputRef.current?.click();
-  };
-
-  const handleInTextImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const res = await convertToWebP(file, 900, 1300, 0.82);
-      const caption = file.name.replace(/\.[^/.]+$/, "");
-      const figureHtml = `<figure class="my-6 text-center"><img src="${res.dataUrl}" alt="${caption}" class="rounded-xl max-w-full max-h-[500px] mx-auto shadow-md border border-[#d8c7b4] object-contain" />${caption ? `<figcaption class="mt-1 text-xs font-serif italic text-[#785b44]">${caption}</figcaption>` : ""}</figure><p><br></p>`;
-      
-      if (editorRef.current) {
-        editorRef.current.focus();
-        document.execCommand("insertHTML", false, figureHtml);
-        setContent(editorRef.current.innerHTML);
-      } else {
-        setContent((prev) => `${prev}${figureHtml}`);
-      }
-      setNotice(`Görsel WebP olarak optimize edilip eklendi (~${res.sizeKB} KB).`);
-      setTimeout(() => setNotice(null), 3500);
-    } catch (err) {
-      console.error("Görsel ekleme hatası:", err);
-      alert("Görsel işlenirken bir hata oluştu.");
-    } finally {
-      if (inTextImageInputRef.current) inTextImageInputRef.current.value = "";
-    }
   };
 
   // Add category
@@ -720,15 +689,6 @@ export default function WriterPage() {
               className="relative px-6 pt-6 sm:px-12 sm:pt-12 rounded-t-3xl rounded-b-none bg-[#faf6f0]/95 border-x-2 border-t-2 border-b-0 border-[#d9c7b2] shadow-2xl backdrop-blur-xs min-h-[calc(100vh-170px)]"
               style={{ paddingBottom: `${paperFeedScroll}px` }}
             >
-              {/* Hidden file input for in-text image WebP upload */}
-              <input
-                ref={inTextImageInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleInTextImageUpload}
-                className="hidden"
-              />
-
               {/* Rich Text Editor Formatting Toolbar */}
               <EditorToolbar
                 editorRef={editorRef}
@@ -737,11 +697,6 @@ export default function WriterPage() {
                     setContent(editorRef.current.innerHTML);
                   }
                 }}
-                fontFamily={fontFamily}
-                setFontFamily={setFontFamily}
-                fontSize={fontSize}
-                setFontSize={setFontSize}
-                onInsertImageClick={handleInsertImage}
                 onCleanTextClick={handleManualClean}
               />
 

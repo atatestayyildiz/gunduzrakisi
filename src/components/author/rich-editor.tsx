@@ -90,6 +90,78 @@ export function RichEditor({
       ? "text-xl sm:text-2xl leading-[1.95]"
       : "text-lg sm:text-xl leading-[1.85]";
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // 1. Enter key: always start a fresh, clean paragraph without inheriting bold/italic/styles
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+
+      const p = document.createElement("p");
+      p.innerHTML = "<br>";
+
+      // Find current top-level child of editorRef
+      let block: Node | null = sel.focusNode;
+      while (block && block.parentElement && block.parentElement !== editorRef.current) {
+        block = block.parentElement;
+      }
+
+      if (block && block.parentElement === editorRef.current) {
+        block.parentNode?.insertBefore(p, block.nextSibling);
+      } else if (editorRef.current) {
+        editorRef.current.appendChild(p);
+      }
+
+      const newRange = document.createRange();
+      newRange.setStart(p, 0);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+
+      // Force reset bold and italic states for the new line
+      if (document.queryCommandState("bold")) document.execCommand("bold", false);
+      if (document.queryCommandState("italic")) document.execCommand("italic", false);
+
+      handleInput();
+      return;
+    }
+
+    // 2. Space key: if at the end of an inline tag (B, STRONG, I, EM, SPAN), break out of it!
+    if (e.key === " ") {
+      const sel = window.getSelection();
+      if (sel && sel.isCollapsed && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        const node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) {
+          const parent = node.parentElement;
+          if (parent && /^(B|STRONG|I|EM|SPAN)$/.test(parent.tagName)) {
+            if (range.startOffset === (node.textContent?.length ?? 0)) {
+              e.preventDefault();
+              const spaceNode = document.createTextNode("\u00A0");
+              if (parent.nextSibling) {
+                parent.parentNode?.insertBefore(spaceNode, parent.nextSibling);
+              } else {
+                parent.parentNode?.appendChild(spaceNode);
+              }
+
+              const newRange = document.createRange();
+              newRange.setStart(spaceNode, 1);
+              newRange.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(newRange);
+
+              if (document.queryCommandState("bold")) document.execCommand("bold", false);
+              if (document.queryCommandState("italic")) document.execCommand("italic", false);
+
+              handleInput();
+              return;
+            }
+          }
+        }
+      }
+    }
+  };
+
   return (
     <div className="relative min-h-[260px] pb-12">
       {/* Visual Placeholder when empty */}
@@ -104,6 +176,7 @@ export function RichEditor({
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
+        onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         className={`w-full outline-hidden min-h-[240px] text-[#2b1b0e] ${fontClass} ${sizeClass}
           [&>p]:my-4 [&>p]:leading-relaxed

@@ -10,7 +10,6 @@ import {
   Minus,
   List,
   Eraser,
-  ImageIcon,
   Type,
   Pilcrow,
 } from "lucide-react";
@@ -18,22 +17,12 @@ import {
 export interface EditorToolbarProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
   syncContent: () => void;
-  fontFamily: "serif" | "typewriter" | "sans";
-  setFontFamily: (font: "serif" | "typewriter" | "sans") => void;
-  fontSize: "small" | "medium" | "large";
-  setFontSize: (size: "small" | "medium" | "large") => void;
-  onInsertImageClick: () => void;
   onCleanTextClick: () => void;
 }
 
 export function EditorToolbar({
   editorRef,
   syncContent,
-  fontFamily,
-  setFontFamily,
-  fontSize,
-  setFontSize,
-  onInsertImageClick,
   onCleanTextClick,
 }: EditorToolbarProps) {
   // Execute WYSIWYG command directly on selected text without losing focus
@@ -42,7 +31,90 @@ export function EditorToolbar({
       editorRef.current.focus();
     }
     document.execCommand(command, false, value);
+
+    // If bold or italic was applied to a selected text, break out caret so continuing typing doesn't stay formatted
+    const sel = window.getSelection();
+    if (sel && (command === "bold" || command === "italic") && sel.rangeCount > 0) {
+      sel.collapseToEnd();
+      const node = sel.focusNode;
+      const parent = node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element | null);
+
+      if (parent && /^(B|STRONG|I|EM|SPAN)$/.test(parent.tagName)) {
+        const cleanNode = document.createTextNode("\u200B");
+        if (parent.nextSibling) {
+          parent.parentNode?.insertBefore(cleanNode, parent.nextSibling);
+        } else {
+          parent.parentNode?.appendChild(cleanNode);
+        }
+
+        const newRange = document.createRange();
+        newRange.setStart(cleanNode, 1);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+
+        if (command === "bold" && document.queryCommandState("bold")) {
+          document.execCommand("bold", false);
+        }
+        if (command === "italic" && document.queryCommandState("italic")) {
+          document.execCommand("italic", false);
+        }
+      }
+    }
+
     syncContent();
+  };
+
+  // Apply font family ONLY to selected text
+  const applyInlineFont = (fontFamilyCSS: string) => {
+    if (editorRef.current) editorRef.current.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+    const range = sel.getRangeAt(0);
+    const span = document.createElement("span");
+    span.style.fontFamily = fontFamilyCSS;
+
+    try {
+      const fragment = range.extractContents();
+      span.appendChild(fragment);
+      range.insertNode(span);
+
+      // Reselect the formatted span
+      sel.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      sel.addRange(newRange);
+      syncContent();
+    } catch (err) {
+      console.error("Font uygulama hatası:", err);
+    }
+  };
+
+  // Apply font size (punto) ONLY to selected text
+  const applyInlineSize = (sizeCSS: string) => {
+    if (editorRef.current) editorRef.current.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+    const range = sel.getRangeAt(0);
+    const span = document.createElement("span");
+    span.style.fontSize = sizeCSS;
+
+    try {
+      const fragment = range.extractContents();
+      span.appendChild(fragment);
+      range.insertNode(span);
+
+      // Reselect the formatted span
+      sel.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      sel.addRange(newRange);
+      syncContent();
+    } catch (err) {
+      console.error("Punto uygulama hatası:", err);
+    }
   };
 
   return (
@@ -56,7 +128,7 @@ export function EditorToolbar({
             e.preventDefault();
             exec("bold");
           }}
-          title="Kalınlaştır (Seçili metin direkt kalın olur)"
+          title="Seçili kısmı kalın yap"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Bold className="w-4 h-4 font-bold" />
@@ -69,7 +141,7 @@ export function EditorToolbar({
             e.preventDefault();
             exec("italic");
           }}
-          title="İtalik Yap (Seçili metin direkt italik olur)"
+          title="Seçili kısmı italik yap"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Italic className="w-4 h-4" />
@@ -82,7 +154,7 @@ export function EditorToolbar({
             e.preventDefault();
             exec("formatBlock", "h2");
           }}
-          title="Büyük Başlık (H2)"
+          title="Bölüm Başlığı (H2)"
           className="p-2 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Heading2 className="w-4 h-4" />
@@ -155,20 +227,6 @@ export function EditorToolbar({
 
         <div className="h-5 w-px bg-[#d5c2ab] mx-1" />
 
-        {/* Image */}
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onInsertImageClick();
-          }}
-          title="Görsel ekle (WebP sıkıştırmalı)"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-xs font-serif text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
-        >
-          <ImageIcon className="w-3.5 h-3.5 text-amber-800" />
-          <span className="hidden sm:inline">Görsel</span>
-        </button>
-
         {/* Clean text */}
         <button
           type="button"
@@ -180,42 +238,95 @@ export function EditorToolbar({
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#faf5ed] hover:bg-[#ded0bf] text-xs font-serif text-[#3e2411] border border-[#d8c7b3] transition-colors cursor-pointer shadow-xs active:scale-95"
         >
           <Eraser className="w-3.5 h-3.5 text-amber-800" />
-          <span className="hidden sm:inline">Arındır</span>
+          <span className="hidden sm:inline">Metni Arındır</span>
         </button>
       </div>
 
-      {/* Typography Selectors: Font Family & Size */}
-      <div className="flex items-center gap-2">
-        {/* Font Family */}
-        <div className="flex items-center gap-1 bg-[#faf5ed] p-1 rounded-xl border border-[#d8c7b3]">
-          <Type className="w-3.5 h-3.5 text-amber-900 ml-1" />
-          <select
-            value={fontFamily}
-            onChange={(e) => setFontFamily(e.target.value as "serif" | "typewriter" | "sans")}
-            className="bg-transparent text-xs font-serif text-[#381f0b] font-medium focus:outline-hidden cursor-pointer pr-1"
-            title="Yazı ve Okuma Fontu"
+      {/* Inline Selection Typography: Font & Punto applied ONLY to selected text */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Seçili Metin İçin Font Butonları */}
+        <div className="flex items-center gap-0.5 bg-[#faf5ed] p-1 rounded-xl border border-[#d8c7b3]">
+          <span className="text-[11px] font-serif text-amber-900/70 px-1 font-semibold select-none flex items-center gap-1">
+            <Type className="w-3 h-3 text-amber-800" />
+            <span className="hidden md:inline">Font:</span>
+          </span>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyInlineFont("Georgia, Cambria, 'Times New Roman', serif");
+            }}
+            title="Seçili metni Klasik Serif fontu yap"
+            className="px-2 py-1 rounded-lg hover:bg-[#e8ded0] text-xs font-serif text-[#3e2411] font-medium transition-colors cursor-pointer"
           >
-            <option value="serif">Klasik Edebi (Serif)</option>
-            <option value="typewriter">Daktilo (Remington Mono)</option>
-            <option value="sans">Modern Yalın (Sans)</option>
-          </select>
+            Serif
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyInlineFont("'Courier New', Courier, monospace");
+            }}
+            title="Seçili metni Daktilo (Monospace) fontu yap"
+            className="px-2 py-1 rounded-lg hover:bg-[#e8ded0] text-xs font-mono text-[#3e2411] font-semibold transition-colors cursor-pointer"
+          >
+            Daktilo
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyInlineFont("ui-sans-serif, system-ui, -apple-system, sans-serif");
+            }}
+            title="Seçili metni Modern Yalın (Sans) fontu yap"
+            className="px-2 py-1 rounded-lg hover:bg-[#e8ded0] text-xs font-sans text-[#3e2411] font-medium transition-colors cursor-pointer"
+          >
+            Yalın
+          </button>
         </div>
 
-        {/* Punto / Font Size */}
-        <div className="flex items-center bg-[#faf5ed] p-1 rounded-xl border border-[#d8c7b3] text-xs font-serif text-[#381f0b]">
-          <select
-            value={fontSize}
-            onChange={(e) => setFontSize(e.target.value as "small" | "medium" | "large")}
-            className="bg-transparent text-xs font-serif text-[#381f0b] font-medium focus:outline-hidden cursor-pointer px-1"
-            title="Yazı Boyutu (Punto)"
+        {/* Seçili Metin İçin Punto Butonları */}
+        <div className="flex items-center gap-0.5 bg-[#faf5ed] p-1 rounded-xl border border-[#d8c7b3]">
+          <span className="text-[11px] font-serif text-amber-900/70 px-1 font-semibold select-none">
+            Punto:
+          </span>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyInlineSize("0.85em");
+            }}
+            title="Seçili metni daha küçük yap (A⁻)"
+            className="px-2 py-0.5 rounded-lg hover:bg-[#e8ded0] text-xs font-serif font-bold text-[#3e2411] transition-colors cursor-pointer"
           >
-            <option value="small">Küçük Punto</option>
-            <option value="medium">Orta Punto</option>
-            <option value="large">Büyük Punto</option>
-          </select>
+            A⁻
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyInlineSize("1em");
+            }}
+            title="Seçili metni standart punto yap (A)"
+            className="px-2 py-0.5 rounded-lg hover:bg-[#e8ded0] text-sm font-serif font-semibold text-[#3e2411] transition-colors cursor-pointer"
+          >
+            A
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              applyInlineSize("1.32em");
+            }}
+            title="Seçili metni daha büyük yap (A⁺)"
+            className="px-2 py-0.5 rounded-lg hover:bg-[#e8ded0] text-base font-serif font-bold text-[#3e2411] transition-colors cursor-pointer"
+          >
+            A⁺
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
 

@@ -123,6 +123,7 @@ export const BookDrawer = ({
   const [editingCatName, setEditingCatName] = useState("");
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<"category" | "music" | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const dateInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -481,7 +482,11 @@ export const BookDrawer = ({
           </div>
 
           {/* Kategori Seçimi & Yönetimi */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative z-30">
+          <div
+            className={`p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative ${
+              openDropdown === "category" ? "z-40" : "z-20"
+            }`}
+          >
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <FolderPlus className="w-4 h-4 text-amber-800" />
@@ -624,11 +629,13 @@ export const BookDrawer = ({
                 setShowNewCatInput(true);
                 setShowManageCategories(false);
               }}
+              isOpen={openDropdown === "category"}
+              onOpenChange={(open) => setOpenDropdown(open ? "category" : null)}
             />
           </div>
 
           {/* Yazı Tarihi */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2 relative z-25">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2 relative z-10">
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-amber-800" />
@@ -709,7 +716,11 @@ export const BookDrawer = ({
           </div>
 
           {/* Müzik Eşlikçisi (Tek Seçim Kutusu) */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative z-20">
+          <div
+            className={`p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative ${
+              openDropdown === "music" ? "z-40" : "z-20"
+            }`}
+          >
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5 text-xs sm:text-sm">
                 <Music className="w-4 h-4 text-amber-800" />
@@ -744,6 +755,8 @@ export const BookDrawer = ({
                 }
               }}
               onOpenAddMusic={onOpenAddMusic}
+              isOpen={openDropdown === "music"}
+              onOpenChange={(open) => setOpenDropdown(open ? "music" : null)}
             />
           </div>
         </div>

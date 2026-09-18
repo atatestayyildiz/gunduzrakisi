@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { MusicTrack } from "@/lib/types";
+import { extractYouTubeId } from "@/components/ui/music-player-widget";
 import { Search, ChevronDown, Check, Music, VolumeX, X, Plus } from "lucide-react";
 
 interface MusicTrackSelectProps {
@@ -9,6 +10,14 @@ interface MusicTrackSelectProps {
   selectedUrl: string;
   onSelect: (track: MusicTrack | null) => void;
   onOpenAddMusic?: () => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function getTrackCover(t: { cover?: string; url: string }) {
+  if (t.cover) return t.cover;
+  const ytId = extractYouTubeId(t.url);
+  return ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "";
 }
 
 function normalize(str: string) {
@@ -28,20 +37,35 @@ export function MusicTrackSelect({
   selectedUrl,
   onSelect,
   onOpenAddMusic,
+  isOpen: propsIsOpen,
+  onOpenChange,
 }: MusicTrackSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = propsIsOpen !== undefined ? propsIsOpen : internalIsOpen;
   const [openUpward, setOpenUpward] = useState(true);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const setIsOpen = useCallback(
+    (next: boolean) => {
+      if (onOpenChange) {
+        onOpenChange(next);
+      } else {
+        setInternalIsOpen(next);
+      }
+    },
+    [onOpenChange]
+  );
+
   const toggleOpen = () => {
-    if (!isOpen && containerRef.current) {
+    const nextState = !isOpen;
+    if (nextState && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       setOpenUpward(spaceBelow < 280);
     }
-    setIsOpen((prev) => !prev);
+    setIsOpen(nextState);
   };
 
   const selectedTrack = useMemo(
@@ -98,17 +122,20 @@ export function MusicTrackSelect({
         <div className="flex items-center gap-2.5 min-w-0">
           {selectedTrack ? (
             <>
-              {selectedTrack.cover ? (
-                <img
-                  src={selectedTrack.cover}
-                  alt={selectedTrack.title}
-                  className="w-6 h-6 rounded-md object-cover border border-[#c5ab8d]/60 shrink-0"
-                />
-              ) : (
-                <div className="w-6 h-6 rounded-md bg-amber-900/15 border border-amber-800/30 flex items-center justify-center text-amber-800 shrink-0">
-                  <Music className="w-3.5 h-3.5" />
-                </div>
-              )}
+              {(() => {
+                const coverImg = getTrackCover(selectedTrack);
+                return coverImg ? (
+                  <img
+                    src={coverImg}
+                    alt={selectedTrack.title}
+                    className="w-6 h-6 rounded-md object-cover border border-[#c5ab8d]/60 shrink-0"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-md bg-amber-900/15 border border-amber-800/30 flex items-center justify-center text-amber-800 shrink-0">
+                    <Music className="w-3.5 h-3.5" />
+                  </div>
+                );
+              })()}
               <div className="truncate text-left">
                 <span className="font-semibold block truncate text-[12px] text-[#2c1707]">
                   {selectedTrack.title}
@@ -231,17 +258,20 @@ export function MusicTrackSelect({
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    {t.cover ? (
-                      <img
-                        src={t.cover}
-                        alt={t.title}
-                        className="w-7 h-7 rounded-md object-cover border border-[#c5ab8d]/60 shrink-0"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-md bg-amber-900/10 border border-amber-800/20 flex items-center justify-center text-amber-900 shrink-0">
-                        <Music className="w-3.5 h-3.5" />
-                      </div>
-                    )}
+                    {(() => {
+                      const coverImg = getTrackCover(t);
+                      return coverImg ? (
+                        <img
+                          src={coverImg}
+                          alt={t.title}
+                          className="w-7 h-7 rounded-md object-cover border border-[#c5ab8d]/60 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-md bg-amber-900/10 border border-amber-800/20 flex items-center justify-center text-amber-900 shrink-0">
+                          <Music className="w-3.5 h-3.5" />
+                        </div>
+                      );
+                    })()}
                     <div className="truncate">
                       <div className="truncate font-medium text-[12px]">{t.title}</div>
                       <div className="text-[10.5px] text-[#7a4f29] truncate italic">

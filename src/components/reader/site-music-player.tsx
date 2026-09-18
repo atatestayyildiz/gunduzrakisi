@@ -52,10 +52,12 @@ export function SiteMusicPlayer({
       const sortedArticles = [...current, ...rest];
 
       sortedArticles.forEach((a) => {
+        const ytId = a.musicUrl ? extractYouTubeId(a.musicUrl) : null;
+        const autoCover = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "";
         list.push({
           title: a.musicTitle || a.title,
           artist: a.musicArtist || "Mert Kip",
-          cover: a.musicCover || "",
+          cover: a.musicCover || autoCover,
           src: a.musicUrl!,
         });
       });
@@ -63,10 +65,12 @@ export function SiteMusicPlayer({
       // 2. Müzik Sandığına kaydedilmiş genel şarkılar (eğer listede henüz yoksa ekle)
       savedTracks.forEach((st) => {
         if (!list.some((item) => item.src === st.url)) {
+          const ytId = extractYouTubeId(st.url);
+          const autoCover = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "";
           list.push({
             title: st.title,
             artist: st.artist,
-            cover: st.cover || "",
+            cover: st.cover || autoCover,
             src: st.url,
           });
         }

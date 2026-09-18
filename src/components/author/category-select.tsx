@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { CategoryItem } from "@/lib/types";
 import { Search, ChevronDown, Check, Bookmark, X, Plus } from "lucide-react";
 
@@ -9,6 +9,8 @@ interface CategorySelectProps {
   selectedId: string;
   onSelect: (catId: string) => void;
   onOpenAddCategory?: () => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function normalize(str: string) {
@@ -28,8 +30,11 @@ export function CategorySelect({
   selectedId,
   onSelect,
   onOpenAddCategory,
+  isOpen: propsIsOpen,
+  onOpenChange,
 }: CategorySelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = propsIsOpen !== undefined ? propsIsOpen : internalIsOpen;
   const [openUpward, setOpenUpward] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,13 +51,25 @@ export function CategorySelect({
     [validCategories, selectedId]
   );
 
+  const setIsOpen = useCallback(
+    (next: boolean) => {
+      if (onOpenChange) {
+        onOpenChange(next);
+      } else {
+        setInternalIsOpen(next);
+      }
+    },
+    [onOpenChange]
+  );
+
   const toggleOpen = () => {
-    if (!isOpen && containerRef.current) {
+    const nextState = !isOpen;
+    if (nextState && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       setOpenUpward(spaceBelow < 260);
     }
-    setIsOpen((prev) => !prev);
+    setIsOpen(nextState);
   };
 
   // Close on outside click or escape

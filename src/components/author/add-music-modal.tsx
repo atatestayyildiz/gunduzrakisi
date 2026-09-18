@@ -57,19 +57,21 @@ export function AddMusicModal({
       setError("Lütfen şarkı adını girin.");
       return;
     }
-    if (!url.trim() || !extractYouTubeId(url)) {
+    const ytId = extractYouTubeId(url.trim());
+    if (!url.trim() || !ytId) {
       setError("Lütfen geçerli bir YouTube veya YouTube Music bağlantısı girin.");
       return;
     }
 
     try {
       setIsSaving(true);
+      const autoCover = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : undefined;
       const trackToSave: MusicTrack = {
         id: editingTrackId || `track_${Date.now()}`,
         title: title.trim(),
         artist: artist.trim() || "Mert Kip",
         url: url.trim(),
-        cover: cover.trim() || undefined,
+        cover: cover.trim() || autoCover,
         createdAt: editingTrackId
           ? tracks.find((t) => t.id === editingTrackId)?.createdAt || new Date().toISOString()
           : new Date().toISOString(),
@@ -206,6 +208,33 @@ export function AddMusicModal({
                   onChange={(e) => setCover(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#120702] border border-[#a87d29]/40 text-amber-100 text-xs font-serif placeholder-amber-200/30 focus:outline-hidden focus:border-amber-400"
                 />
+
+                {/* Otomatik veya Özel Kapak Görseli Önizlemesi */}
+                {(() => {
+                  const detectedYt = extractYouTubeId(url.trim());
+                  const activePreview = cover.trim() || (detectedYt ? `https://img.youtube.com/vi/${detectedYt}/hqdefault.jpg` : "");
+                  if (!activePreview) return null;
+                  return (
+                    <div className="mt-2 flex items-center gap-2.5 p-2 rounded-xl bg-black/40 border border-[#a87d29]/30">
+                      <img
+                        src={activePreview}
+                        alt="Kapak Önizleme"
+                        className="w-10 h-10 rounded-lg object-cover border border-[#a87d29]/40 shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-serif font-medium text-amber-200">
+                          {cover.trim() ? "Özel Kapak Görseli" : "YouTube Kapak Görseli (Otomatik)"}
+                        </div>
+                        <div className="text-[10px] font-serif italic text-amber-200/60 truncate">
+                          {activePreview}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="pt-2 flex items-center gap-2">

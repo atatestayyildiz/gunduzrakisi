@@ -133,12 +133,8 @@ export default function ArticlePage({ params }: PageProps) {
       <article className="max-w-2xl sm:max-w-3xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24">
         {/* Article Header */}
         <header className="mb-10 text-center sm:text-left border-b border-[#d8c8b4] pb-8">
-          {/* Category & Badge */}
+          {/* Sips Badge */}
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 mb-4">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-[#3f220d] text-amber-100 shadow-xs">
-              {article.category}
-            </span>
-
             {/* Iconic "X Yudumda Okunur" indicator */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#fcf9f2] text-amber-900 border border-amber-800/30 shadow-xs">
               <RakiGlass className="w-3.5 h-3.5 text-amber-600" />

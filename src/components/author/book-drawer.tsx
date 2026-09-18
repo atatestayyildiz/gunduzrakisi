@@ -5,6 +5,7 @@ import { Book } from "@/components/ui/book";
 import { CategoryItem } from "@/lib/types";
 import { convertToWebP } from "@/lib/image-utils";
 import { MusicTrackSelect } from "./music-track-select";
+import { CategorySelect } from "./category-select";
 import {
   X,
   Sliders,
@@ -123,6 +124,7 @@ export const BookDrawer = ({
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const dateInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -243,7 +245,7 @@ export const BookDrawer = ({
             </button>
           </div>
 
-          <div className="p-5 sm:p-6 space-y-5 flex-1 text-sm text-[#3b2413]">
+          <div className="p-5 sm:p-6 pb-36 space-y-5 flex-1 text-sm text-[#3b2413]">
             {/* Live 3D Book Preview (Çekmece içi Kadife/Parchment Tepsi) */}
             <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[#efe4d2]/95 border border-[#c4ab8f] shadow-[inset_0_2px_8px_rgba(0,0,0,0.12),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs">
             <span className="text-xs font-serif italic text-[#755338] mb-4">
@@ -479,7 +481,7 @@ export const BookDrawer = ({
           </div>
 
           {/* Kategori Seçimi & Yönetimi */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative z-30">
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <FolderPlus className="w-4 h-4 text-amber-800" />
@@ -613,24 +615,20 @@ export const BookDrawer = ({
               </div>
             )}
 
-            {/* Kategori Seçim Kutusu */}
-            <select
-              value={category}
-              onChange={(e) => onCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs focus:outline-hidden focus:ring-2 focus:ring-amber-800/40 cursor-pointer"
-            >
-              {categories
-                .filter((c) => c.id !== "all")
-                .map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-            </select>
+            {/* Kategori / Raf Seçim Kutusu (Özel Tasarım & Aranabilir) */}
+            <CategorySelect
+              categories={categories}
+              selectedId={category}
+              onSelect={onCategoryChange}
+              onOpenAddCategory={() => {
+                setShowNewCatInput(true);
+                setShowManageCategories(false);
+              }}
+            />
           </div>
 
           {/* Yazı Tarihi */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2 relative z-25">
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-amber-800" />
@@ -653,17 +651,27 @@ export const BookDrawer = ({
                 </button>
               )}
             </div>
-            <div className="flex gap-2 items-center">
+
+            {/* Antika Tasarımlı Tarih Seçim Alanı */}
+            <div className="relative flex items-center w-full rounded-xl border border-[#c5ab8d] bg-white/95 focus-within:ring-2 focus-within:ring-amber-800/30 focus-within:border-amber-800 shadow-xs transition-all overflow-hidden">
+              <div className="pl-3 pr-2 text-amber-800/70 shrink-0">
+                <Calendar className="w-4 h-4" />
+              </div>
               <input
                 type="text"
-                placeholder="Tarih"
+                placeholder="Örn: 18 Eylül 2026"
                 value={date}
                 onChange={(e) => onDateChange?.(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-xl bg-white border border-[#d8c7b4] text-xs font-serif focus:outline-hidden focus:ring-2 focus:ring-amber-800/40"
+                className="flex-1 py-2.5 bg-transparent border-none text-xs font-serif text-[#3b200b] placeholder:text-amber-900/35 focus:outline-hidden"
               />
+
+              {/* Gizli native tarih seçici (tarayıcı g/tarih bozulmalarını önlemek için arka planda tetiklenir) */}
               <input
+                ref={dateInputRef}
                 type="date"
-                title="Takvimden Tarih Seç"
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
                 onChange={(e) => {
                   if (e.target.value && onDateChange) {
                     const [y, m, d] = e.target.value.split("-").map(Number);
@@ -677,13 +685,31 @@ export const BookDrawer = ({
                     );
                   }
                 }}
-                className="w-9 h-9 p-1 rounded-xl bg-white border border-[#d8c7b4] text-xs cursor-pointer text-amber-900"
               />
+
+              {/* Takvim Açma Butonu */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (dateInputRef.current) {
+                    try {
+                      dateInputRef.current.showPicker();
+                    } catch {
+                      dateInputRef.current.click();
+                    }
+                  }
+                }}
+                className="px-2.5 py-1.5 mr-1.5 rounded-lg bg-amber-900/10 hover:bg-amber-900/18 text-amber-900 text-xs font-serif font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                title="Takvimden Tarih Seç"
+              >
+                <span>Takvim</span>
+                <Calendar className="w-3.5 h-3.5 opacity-80" />
+              </button>
             </div>
           </div>
 
           {/* Müzik Eşlikçisi (Tek Seçim Kutusu) */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative z-20">
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5 text-xs sm:text-sm">
                 <Music className="w-4 h-4 text-amber-800" />

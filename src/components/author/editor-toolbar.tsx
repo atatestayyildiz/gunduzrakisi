@@ -277,7 +277,7 @@ export function EditorToolbar({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2.5 p-2.5 rounded-2xl bg-[#eee3d3]/95 border border-[#d6c4ad] shadow-xs backdrop-blur-xs mb-5 select-none relative z-20">
+    <div className="sticky top-2 sm:top-3 z-30 flex flex-wrap items-center justify-between gap-2.5 p-2 sm:p-2.5 rounded-2xl bg-[#eee3d3]/98 border border-[#d6c4ad] shadow-[0_6px_24px_rgba(45,24,9,0.14)] backdrop-blur-md mb-5 select-none transition-shadow">
       {/* Sol Grup: Temel Biçimlendirme & İnteraktif Öğeler */}
       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         {/* GRUP 1: Karakter Stilleri (Kalın, İtalik, Altı Çizili, Üstü Çizili) */}

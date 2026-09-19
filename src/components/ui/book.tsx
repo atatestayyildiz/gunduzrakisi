@@ -76,17 +76,26 @@ export const BookCover = ({
   className,
   width,
 }: BookCoverProps) => {
-  const _color = color ? color : variant === "simple" ? "var(--ds-background-200)" : "var(--ds-amber-600)";
+  const _color = color && color.trim() ? color : variant === "simple" ? "#3e220e" : "#b45309";
   const _illustration = illustration ? illustration : DefaultIllustration;
   const resolvedTextColor = textColor || (variant === "stripe" && !coverImage ? "var(--ds-gray-1000)" : "#ffffff");
+
+  const fontSizeTitle = width
+    ? variant === "simple"
+      ? Math.max(12, Math.round(width * 0.115))
+      : Math.max(11, Math.round(width * 0.102))
+    : undefined;
 
   return (
     <div
       className={clsx(
-        "flex flex-col h-full w-full rounded-l-md rounded-r overflow-hidden bg-background-200 shadow-book relative after:absolute after:border after:border-gray-alpha-400 after:w-full after:h-full after:shadow-book-border after:rounded-l-md after:rounded-r",
+        "flex flex-col h-full w-full rounded-l-md rounded-r overflow-hidden shadow-book relative after:absolute after:border after:border-gray-alpha-400 after:w-full after:h-full after:shadow-book-border after:rounded-l-md after:rounded-r",
         className
       )}
-      style={{ containerType: "inline-size" }}
+      style={{
+        containerType: "inline-size",
+        backgroundColor: _color,
+      }}
     >
       {/* Top-5 Liked Book Medallion Badge */}
       {isTopLiked && <TopLikedBadge />}
@@ -99,7 +108,10 @@ export const BookCover = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex flex-col justify-end p-[7%] pl-[14%]">
             <span
               className="leading-[1.2em] tracking-[-.02em] font-semibold text-balance drop-shadow-md text-[11cqw]"
-              style={{ color: resolvedTextColor }}
+              style={{
+                color: resolvedTextColor,
+                fontSize: fontSizeTitle ? `${fontSizeTitle}px` : undefined,
+              }}
             >
               {title}
             </span>
@@ -133,7 +145,10 @@ export const BookCover = ({
             >
               <span
                 className="leading-[1.25em] tracking-[-.02em] text-balance font-semibold text-[10.5cqw]"
-                style={{ color: resolvedTextColor }}
+                style={{
+                  color: resolvedTextColor,
+                  fontSize: fontSizeTitle ? `${fontSizeTitle}px` : undefined,
+                }}
               >
                 {title}
               </span>
@@ -184,7 +199,10 @@ export const BookCover = ({
                   "leading-[1.25em] tracking-[-.02em] text-balance font-semibold",
                   variant === "simple" ? "text-[12cqw]" : "text-[10.5cqw]"
                 )}
-                style={{ color: resolvedTextColor }}
+                style={{
+                  color: resolvedTextColor,
+                  fontSize: fontSizeTitle ? `${fontSizeTitle}px` : undefined,
+                }}
               >
                 {title}
               </span>
@@ -250,6 +268,8 @@ export const Book = ({
   onClick
 }: BookProps) => {
   const _width = useResponsive(width);
+  const depth = Math.round(_width * 0.28);
+  const bookHeight = Math.round(((_width * 60) / 49) * heightRatio);
 
   return (
     <div
@@ -262,11 +282,45 @@ export const Book = ({
         style={{
           transformStyle: "preserve-3d",
           minWidth: _width,
-          containerType: "inline-size",
-          height: `calc((${_width}px * 60 / 49) * ${heightRatio})`
+          width: _width,
+          height: bookHeight,
         }}
       >
-        <div style={{ width: _width, height: "100%" }}>
+        {/* 1. Book back cover: Rendered FIRST in DOM so in 2D it is naturally behind the front cover */}
+        <div
+          className="absolute left-0 top-0 rounded-l-md rounded-r h-full pointer-events-none"
+          style={{
+            width: _width,
+            transform: `translateZ(-${depth}px)`,
+            backgroundColor: color || (variant === "stripe" ? "#b45309" : "#3e220e"),
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            zIndex: 1,
+          }}
+        />
+
+        {/* 2. Book pages edge (side): Visible in 3D perspective on hover */}
+        <div
+          className="h-[calc(100%_-_6px)] absolute top-[3px] pointer-events-none"
+          style={{
+            width: Math.max(1, depth - 2),
+            background: "linear-gradient(90deg, #eaeaea, transparent 70%), linear-gradient(#fff, #fafafa)",
+            transform: `translateX(${_width - depth / 2 - 3}px) rotateY(90deg) translateX(${depth / 2}px)`,
+            zIndex: 2,
+          }}
+        />
+
+        {/* 3. Book front cover: Rendered LAST in DOM with explicit zIndex: 10 to ensure it always renders on top in all browsers */}
+        <div
+          style={{
+            width: _width,
+            height: "100%",
+            position: "relative",
+            zIndex: 10,
+            transform: "translateZ(0px)",
+            transformStyle: "preserve-3d",
+          }}
+        >
           <BookCover
             title={title}
             variant={variant}
@@ -279,20 +333,6 @@ export const Book = ({
             width={_width}
           />
         </div>
-
-        {/* Book pages edge (side) */}
-        <div
-          className="h-[calc(100%_-_2_*_3px)] w-[calc(29cqw_-_2px)] absolute top-[3px] pointer-events-none"
-          style={{
-            background: "linear-gradient(90deg, #eaeaea, transparent 70%), linear-gradient(#fff, #fafafa)",
-            transform: `translateX(calc(${_width} * 1px - 29cqw / 2 - 3px)) rotateY(90deg) translateX(calc(29cqw / 2))`
-          }}
-        />
-        {/* Book back cover */}
-        <div
-          className="bg-gray-200 absolute left-0 top-0 rounded-l-md rounded-r h-full pointer-events-none"
-          style={{ width: _width, transform: "translateZ(calc(-1 * 29cqw))" }}
-        />
       </div>
     </div>
   );

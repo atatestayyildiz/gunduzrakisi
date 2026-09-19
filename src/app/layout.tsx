@@ -15,10 +15,17 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Gündüz Rakısı — Mert Kip",
+  title: "Gündüz Rakısı | Mert Kip",
   description: "İnce şeylerin hatırı, telaşsız masalar ve bir parça memleket. Mert Kip'in deneme kitaplığı.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/textures/gunduzrakisifavicon.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [
+      { url: "/textures/gunduzrakisifavicon.png" },
+    ],
+    shortcut: "/textures/gunduzrakisifavicon.png",
   },
 };
 

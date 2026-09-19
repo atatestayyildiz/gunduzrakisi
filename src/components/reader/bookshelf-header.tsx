@@ -190,7 +190,7 @@ export const BookshelfHeader = ({
           </div>
 
           {/* Categories Dropdown & Shelf Stats */}
-          <div className="relative z-30 mt-6 pt-4 border-t border-white/15 flex flex-wrap items-center justify-between gap-4">
+          <div className="relative z-30 mt-6 pt-4 flex flex-wrap items-center justify-between gap-4">
             {/* Dropdown Menu Container */}
             <div className="relative" ref={dropdownRef}>
               <button

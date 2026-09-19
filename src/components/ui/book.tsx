@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useResponsive } from "@/components/ui/use-responsive";
+import { TopLikedBadge } from "@/components/ui/top-liked-badge";
 import clsx from "clsx";
 
 const DefaultIllustration = (
@@ -46,6 +47,7 @@ export interface BookProps {
   className?: string;
   scale?: number;
   heightRatio?: number;
+  isTopLiked?: boolean;
   onClick?: () => void;
 }
 
@@ -57,6 +59,7 @@ export interface BookCoverProps {
   illustration?: React.ReactNode;
   textured?: boolean;
   coverImage?: string;
+  isTopLiked?: boolean;
   className?: string;
   width?: number;
 }
@@ -69,6 +72,7 @@ export const BookCover = ({
   illustration,
   textured = false,
   coverImage,
+  isTopLiked = false,
   className,
   width,
 }: BookCoverProps) => {
@@ -84,6 +88,8 @@ export const BookCover = ({
       )}
       style={{ containerType: "inline-size" }}
     >
+      {/* Top-5 Liked Book Medallion Badge */}
+      {isTopLiked && <TopLikedBadge />}
       {coverImage && variant === "simple" ? (
         /* Yekpare (Simple): Tüm kapakta yüklenen görsel yer alır */
         <div
@@ -240,6 +246,7 @@ export const Book = ({
   className,
   scale = 1,
   heightRatio = 1,
+  isTopLiked = false,
   onClick
 }: BookProps) => {
   const _width = useResponsive(width);
@@ -268,6 +275,7 @@ export const Book = ({
             illustration={illustration}
             textured={textured}
             coverImage={coverImage}
+            isTopLiked={isTopLiked}
             width={_width}
           />
         </div>

@@ -3,13 +3,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { CategoryItem } from "@/lib/types";
-import { ChevronDown, Check, BookMarked, Feather } from "lucide-react";
+import { ChevronDown, Check, BookMarked, Feather, Search, X } from "lucide-react";
 
 interface BookshelfHeaderProps {
   categories: CategoryItem[];
   selectedCategory: string;
   onSelectCategory: (catId: string) => void;
   totalBooks: number;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
 export const BookshelfHeader = ({
@@ -17,6 +19,8 @@ export const BookshelfHeader = ({
   selectedCategory,
   onSelectCategory,
   totalBooks,
+  searchQuery = "",
+  onSearchChange,
 }: BookshelfHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthorAuthenticated, setIsAuthorAuthenticated] = useState(false);
@@ -41,20 +45,48 @@ export const BookshelfHeader = ({
   }, []);
 
   const activeCategory = categories.find((c) => c.id === selectedCategory);
-  const activeCategoryName = activeCategory ? activeCategory.name : "Tüm Kitaplar";
+  const activeCategoryName =
+    selectedCategory === "top-liked"
+      ? "★ En Beğenilenler"
+      : activeCategory
+      ? activeCategory.name
+      : "Tüm Kitaplar";
 
   return (
     <header className="relative w-full max-w-7xl mx-auto pt-4 sm:pt-6 px-3 sm:px-6">
       {/* Heavy Solid Oak Bookcase Crown Molding (Üst Kapak / Taç - Dropdown taşması için overflow-visible) */}
       <div className="relative rounded-t-3xl border-x-4 border-t-4 border-[#241004] shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
-        {/* Top Carved Molding Edge (Genişletilmiş masif meşe taç + Ahşap yakma yaldızlı imza) */}
-        <div className="oak-shelf-top h-10 sm:h-12 w-full rounded-t-[22px] border-b border-[#ffd9a3]/20 flex items-center justify-end px-6 sm:px-8">
+        {/* Top Carved Molding Edge (Genişletilmiş masif meşe taç + Ahşap yakma yaldızlı imza + Arama Kutusu) */}
+        <div className="oak-shelf-top h-11 sm:h-12 w-full rounded-t-[22px] border-b border-[#ffd9a3]/20 flex items-center justify-between px-4 sm:px-8">
+          {/* Sol: Antika Arama Kutusu */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#ffd9a3]/60 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              placeholder="Kitaplıkta ara..."
+              className="w-36 sm:w-64 pl-8 pr-7 py-1 rounded-lg bg-black/45 border border-[#ffd9a3]/25 focus:border-[#ffd9a3]/60 focus:bg-black/65 text-xs font-serif text-[#faebd7] placeholder:text-[#e0c4a4]/40 focus:outline-hidden transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.7)]"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchChange?.("")}
+                className="absolute right-2 text-[#ffd9a3]/50 hover:text-amber-200 cursor-pointer transition-colors p-0.5"
+                title="Aramayı Temizle"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Sağ: moonworks.com.tr hediyesidir */}
           <a
             href="https://moonworks.com.tr"
             target="_blank"
             rel="noopener noreferrer"
             title="moonworks.com.tr hediyesidir"
-            className="group relative inline-flex items-center gap-1.5 transition-all hover:brightness-125 cursor-pointer"
+            className="group relative inline-flex items-center gap-1.5 transition-all hover:brightness-125 cursor-pointer shrink-0 ml-2"
           >
             {/* Pyrography (Ahşap Dağlama / Yakma) & Gilded Gold Leaf Effect */}
             <span
@@ -156,6 +188,25 @@ export const BookshelfHeader = ({
 
                   {/* Scrollable Category Options */}
                   <div className="max-h-60 sm:max-h-72 overflow-y-auto mt-1 space-y-1 pr-1 custom-scrollbar">
+                    {/* En Beğenilenler Özel Seçeneği */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectCategory("top-liked");
+                        setIsOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-serif transition-all cursor-pointer text-left ${
+                        selectedCategory === "top-liked"
+                          ? "bg-amber-500/25 text-amber-200 font-bold border border-amber-500/50"
+                          : "text-[#ffd9a3] hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 font-semibold text-amber-300">
+                        <span>★</span>
+                        <span>En Beğenilenler</span>
+                      </span>
+                      {selectedCategory === "top-liked" && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
+                    </button>
                     {categories.map((cat) => {
                       const isActive = selectedCategory === cat.id;
                       return (

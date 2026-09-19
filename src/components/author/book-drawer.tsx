@@ -6,6 +6,8 @@ import { CategoryItem } from "@/lib/types";
 import { convertToWebP } from "@/lib/image-utils";
 import { MusicTrackSelect } from "./music-track-select";
 import { CategorySelect } from "./category-select";
+import { LeverSwitch } from "@/components/ui/lever-switch";
+import { ScheduleConfirmModal } from "./schedule-confirm-modal";
 import {
   X,
   Sliders,
@@ -21,6 +23,7 @@ import {
   Trash2,
   Check,
   Calendar,
+  Clock,
   FileText,
   Upload,
   ImageIcon,
@@ -40,6 +43,8 @@ interface BookDrawerProps {
   onDeleteCategory?: (id: string) => void;
   date?: string;
   onDateChange?: (date: string) => void;
+  scheduledAt?: string;
+  onScheduledAtChange?: (val: string | undefined) => void;
   onSaveAsDraft?: () => void;
   coverColor: string;
   onCoverColorChange: (color: string) => void;
@@ -90,6 +95,8 @@ export const BookDrawer = ({
   onDeleteCategory,
   date = "",
   onDateChange,
+  scheduledAt,
+  onScheduledAtChange,
   onSaveAsDraft,
   coverColor,
   onCoverColorChange,
@@ -124,6 +131,21 @@ export const BookDrawer = ({
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<"category" | "music" | null>(null);
+  const [isScheduled, setIsScheduled] = useState(Boolean(scheduledAt));
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    if (scheduledAt) return scheduledAt.slice(0, 10);
+    const next = new Date();
+    next.setDate(next.getDate() + 1);
+    const y = next.getFullYear();
+    const m = String(next.getMonth() + 1).padStart(2, "0");
+    const d = String(next.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  });
+  const [scheduleTime, setScheduleTime] = useState(() => {
+    if (scheduledAt && scheduledAt.includes("T")) return scheduledAt.split("T")[1].slice(0, 5);
+    return "12:00";
+  });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const dateInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -716,6 +738,83 @@ export const BookDrawer = ({
             </div>
           </div>
 
+          {/* İleri Tarihli Paylaşım (Zamanlayıcı & Lever Switch) */}
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-3 relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-800 shrink-0" />
+                <div>
+                  <span className="font-serif font-semibold text-[#4a2b13] text-xs sm:text-sm block">
+                    Daha Sonra Paylaş
+                  </span>
+                  <span className="text-[10px] text-amber-900/60 font-serif block">
+                    Belirlediğiniz gün ve saatte otomatik yayınlanır
+                  </span>
+                </div>
+              </div>
+              <LeverSwitch
+                checked={isScheduled}
+                onCheckedChange={(checked) => {
+                  setIsScheduled(checked);
+                  if (checked) {
+                    const nextDay = new Date();
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    const y = nextDay.getFullYear();
+                    const m = String(nextDay.getMonth() + 1).padStart(2, "0");
+                    const d = String(nextDay.getDate()).padStart(2, "0");
+                    const dateStr = `${y}-${m}-${d}`;
+                    setScheduleDate(dateStr);
+                    setScheduleTime("12:00");
+                    onScheduledAtChange?.(`${dateStr}T12:00:00`);
+                  } else {
+                    onScheduledAtChange?.(undefined);
+                  }
+                }}
+              />
+            </div>
+
+            {isScheduled && (
+              <div className="pt-2.5 border-t border-[#d2c0aa]/60 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Tarih */}
+                  <div>
+                    <label className="text-[10px] font-serif font-medium text-[#4a2b13] block mb-1">
+                      Yayın Günü
+                    </label>
+                    <input
+                      type="date"
+                      value={scheduleDate}
+                      onChange={(e) => {
+                        setScheduleDate(e.target.value);
+                        if (e.target.value && scheduleTime) {
+                          onScheduledAtChange?.(`${e.target.value}T${scheduleTime}:00`);
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-[#c5ab8d] bg-white text-xs font-serif text-[#3b200b] focus:outline-hidden focus:border-amber-800"
+                    />
+                  </div>
+                  {/* Saat */}
+                  <div>
+                    <label className="text-[10px] font-serif font-medium text-[#4a2b13] block mb-1">
+                      Yayın Saati
+                    </label>
+                    <input
+                      type="time"
+                      value={scheduleTime}
+                      onChange={(e) => {
+                        setScheduleTime(e.target.value);
+                        if (scheduleDate && e.target.value) {
+                          onScheduledAtChange?.(`${scheduleDate}T${e.target.value}:00`);
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-[#c5ab8d] bg-white text-xs font-serif text-[#3b200b] focus:outline-hidden focus:border-amber-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Müzik Eşlikçisi (Tek Seçim Kutusu) */}
           <div
             className={`p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative ${
@@ -772,12 +871,27 @@ export const BookDrawer = ({
         >
           <button
             type="button"
-            onClick={onSaveToShelf}
+            onClick={() => {
+              if (isScheduled) {
+                setShowConfirmModal(true);
+              } else {
+                onSaveToShelf();
+              }
+            }}
             disabled={isSaving}
             className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#4d2810] via-[#753d16] to-[#3a1d0a] hover:from-[#5e3113] hover:to-[#47240d] text-[#faedd9] font-serif font-bold text-sm tracking-wide shadow-xl border border-[#d4af37]/60 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>{isSaving ? "Rafa Diziliyor..." : "Ciltle & Rafa Diz (Yayınla)"}</span>
+            {isScheduled ? (
+              <>
+                <Clock className="w-4 h-4 text-amber-300" />
+                <span>{isSaving ? "Planlanıyor..." : "Zamanla & Rafa Planla"}</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>{isSaving ? "Rafa Diziliyor..." : "Ciltle & Rafa Diz (Yayınla)"}</span>
+              </>
+            )}
           </button>
 
           {onSaveAsDraft && (
@@ -793,6 +907,19 @@ export const BookDrawer = ({
           )}
         </div>
       </aside>
+
+      {/* İleri Tarihli Paylaşım Onay Penceresi */}
+      <ScheduleConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          onSaveToShelf();
+        }}
+        title={title}
+        scheduleDate={scheduleDate}
+        scheduleTime={scheduleTime}
+      />
     </div>
   </>
 );

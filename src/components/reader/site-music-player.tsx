@@ -23,6 +23,7 @@ export function SiteMusicPlayer({
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(false);
   const isDrawerOpenRef = React.useRef(isDrawerOpen);
 
   useEffect(() => {
@@ -78,12 +79,44 @@ export function SiteMusicPlayer({
 
       setTracks(list);
 
+      const hasSpecificMusic = Boolean(
+        currentArticleId && articles.some(
+          (a) => a.id === currentArticleId && !a.isDraft && a.musicUrl && extractYouTubeId(a.musicUrl)
+        )
+      );
+
+      setAutoPlay(hasSpecificMusic);
+
       if (list.length > 0) {
-        setTimeout(() => {
-          if (!isDrawerOpenRef.current) {
-            setIsOpen(true);
+        if (currentArticleId) {
+          if (hasSpecificMusic) {
+            // Özel şarkı atanmış: Player açılır, şarkı başlar ve player açık kalır
+            setTimeout(() => {
+              if (!isDrawerOpenRef.current) {
+                setIsOpen(true);
+              }
+            }, 600);
+          } else {
+            // Özel şarkı atanmamış: Player bir kere açılır, sonra sessizce kapanır
+            setTimeout(() => {
+              if (!isDrawerOpenRef.current) {
+                setIsOpen(true);
+                setTimeout(() => {
+                  if (!isDrawerOpenRef.current) {
+                    setIsOpen(false);
+                  }
+                }, 2200);
+              }
+            }, 600);
           }
-        }, 900);
+        } else {
+          // Normal ana sayfa / yazar odası davranışı
+          setTimeout(() => {
+            if (!isDrawerOpenRef.current) {
+              setIsOpen(true);
+            }
+          }, 900);
+        }
       }
     }
     loadTracks();
@@ -118,7 +151,7 @@ export function SiteMusicPlayer({
         />
 
         {/* Oynatıcı kartı */}
-        {tracks.length > 0 && <MusicPlayerWidget tracks={tracks} />}
+        {tracks.length > 0 && <MusicPlayerWidget tracks={tracks} autoPlay={autoPlay} />}
 
         {/* Yazar Odasına Özel "Şarkı Ekle / Yönet" Barı */}
         {showAddMusic && onOpenAddMusic && (

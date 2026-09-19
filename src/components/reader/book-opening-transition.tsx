@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookArticle } from "@/lib/types";
 import { BookCover } from "@/components/ui/book";
-import { BookOpen, ArrowRight, X, Music } from "lucide-react";
+import { BookOpen, ArrowRight, X, Music, Heart, Eye } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
 import { getCleanExcerpt } from "@/lib/text-cleaner";
 
@@ -186,26 +186,43 @@ export const BookOpeningTransition = ({
               }`}
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#e2d5c3] pb-2.5 mb-3.5 text-xs font-serif text-[#8b6546]">
+              <div className="flex items-center justify-between border-b border-[#e2d5c3] pb-2.5 mb-3 text-xs font-serif text-[#8b6546]">
                 <span className="uppercase tracking-widest font-bold">Gündüz Rakısı</span>
-                <span className="flex items-center gap-1 text-amber-900 font-semibold bg-[#f4ece1] px-2 py-0.5 rounded-full">
-                  <RakiGlass className="w-3.5 h-3.5 text-amber-700" />
-                  <span>{article.sips} yudumda</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  {/* Beğeni Sayısı */}
+                  <span
+                    className="flex items-center gap-1 text-rose-800 font-semibold bg-[#fcf2f2] px-2 py-0.5 rounded-full border border-rose-200/70 shadow-2xs"
+                    title="Beğeni Sayısı"
+                  >
+                    <Heart className="w-3 h-3 text-rose-600 fill-rose-600" />
+                    <span>{article.likes || 0}</span>
+                  </span>
+                  {/* Yudum Rozeti */}
+                  <span className="flex items-center gap-1 text-amber-900 font-semibold bg-[#f4ece1] px-2 py-0.5 rounded-full border border-amber-900/15 shadow-2xs">
+                    <RakiGlass className="w-3.5 h-3.5 text-amber-700" />
+                    <span>{article.sips} yudumda</span>
+                  </span>
+                </div>
               </div>
 
               {/* Title - Razor sharp serif font */}
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#2d1808] leading-tight mb-3 tracking-tight">
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#2d1808] leading-tight mb-2.5 tracking-tight">
                 {article.title}
               </h2>
 
-              {/* Music tag if present */}
-              {article.musicTitle && (
-                <div className="inline-flex items-center gap-1.5 text-xs text-[#7a5b42] font-serif mb-3.5 bg-[#f2e9dc] px-3 py-1 rounded-md border border-[#e0d2bf]">
-                  <Music className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                  <span className="font-medium">Eşlikçi: {article.musicTitle}</span>
+              {/* Metalar: Eşlikçi Müzik & Tekil Okuma Sayısı */}
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {article.musicTitle && (
+                  <div className="inline-flex items-center gap-1.5 text-xs text-[#7a5b42] font-serif bg-[#f2e9dc] px-2.5 py-0.5 rounded-md border border-[#e0d2bf]">
+                    <Music className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span className="font-medium">Eşlikçi: {article.musicTitle}</span>
+                  </div>
+                )}
+                <div className="inline-flex items-center gap-1 text-[11px] text-[#7a5b42] font-serif bg-[#fbf6ee] px-2.5 py-0.5 rounded-md border border-[#e8ded0]">
+                  <Eye className="w-3.5 h-3.5 text-amber-800/80" />
+                  <span>Bu yazı <strong className="text-amber-950 font-bold">{article.views || 0}</strong> defa okundu</span>
                 </div>
-              )}
+              </div>
 
               {/* Excerpt */}
               <p className="font-serif text-sm leading-relaxed text-[#3f2a1b] line-clamp-5 italic">

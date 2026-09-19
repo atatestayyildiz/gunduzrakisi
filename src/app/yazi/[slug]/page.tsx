@@ -4,7 +4,7 @@ import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookArticle } from "@/lib/types";
-import { getArticles } from "@/lib/posts-service";
+import { getArticles, toggleArticleLike, incrementArticleViews } from "@/lib/posts-service";
 import { matchesArticleSlug } from "@/lib/slug-utils";
 import { ReadingProgress } from "@/components/reader/reading-progress";
 import { SiteMusicPlayer } from "@/components/reader/site-music-player";
@@ -15,7 +15,9 @@ import {
   Clock,
   Share2,
   Check,
-  Feather
+  Feather,
+  Heart,
+  Eye
 } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
 
@@ -30,6 +32,9 @@ export default function ArticlePage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isAuthorAuthenticated, setIsAuthorAuthenticated] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [viewsCount, setViewsCount] = useState(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,11 +49,57 @@ export default function ArticlePage({ params }: PageProps) {
       const found = articles.find((a) => matchesArticleSlug(a, resolvedParams.slug));
       if (found) {
         setArticle(found);
+        setLikesCount(found.likes || 0);
+        setViewsCount(found.views || 0);
+        if (typeof window !== "undefined") {
+          const liked = localStorage.getItem(`gunduz_rakisi_liked_${found.id}`);
+          setHasLiked(liked === "true");
+        }
       }
       setLoading(false);
     }
     load();
   }, [resolvedParams.slug]);
+
+  // 5 Saniye Kuralı: Okuyucu sayfada en az 5 saniye vakit geçirirse tekil okuma sayacını artır
+  useEffect(() => {
+    if (!article) return;
+
+    const timer = setTimeout(async () => {
+      if (typeof window !== "undefined") {
+        const viewKey = `gunduz_rakisi_viewed_${article.id}`;
+        const alreadyCounted = localStorage.getItem(viewKey);
+        if (!alreadyCounted) {
+          localStorage.setItem(viewKey, "true");
+          const updatedViews = await incrementArticleViews(article.id);
+          if (updatedViews > 0) {
+            setViewsCount(updatedViews);
+          }
+        }
+      }
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [article?.id]);
+
+  const handleToggleLike = async () => {
+    if (!article) return;
+    const nextState = !hasLiked;
+    setHasLiked(nextState);
+
+    if (typeof window !== "undefined") {
+      if (nextState) {
+        localStorage.setItem(`gunduz_rakisi_liked_${article.id}`, "true");
+      } else {
+        localStorage.removeItem(`gunduz_rakisi_liked_${article.id}`);
+      }
+    }
+
+    const newCount = await toggleArticleLike(article.id, nextState);
+    setLikesCount(newCount);
+  };
 
   const handleShare = () => {
     if (typeof window !== "undefined") {
@@ -159,6 +210,33 @@ export default function ArticlePage({ params }: PageProps) {
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 opacity-70" />
               ~{article.readTimeMinutes} dakika
+            </span>
+
+            {/* Like Butonu ve Sayacı */}
+            <span>•</span>
+            <button
+              type="button"
+              onClick={handleToggleLike}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-serif transition-all cursor-pointer select-none active:scale-90 ${
+                hasLiked
+                  ? "bg-rose-100 text-rose-700 font-bold border border-rose-300 shadow-xs"
+                  : "bg-[#f4ece1] hover:bg-[#ebdccc] text-[#6d4c32] border border-[#d8c8b4]"
+              }`}
+              title={hasLiked ? "Beğeniyi Geri Al" : "Bu Yazıyı Beğen"}
+            >
+              <Heart
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  hasLiked ? "fill-rose-600 text-rose-600 scale-110" : "text-rose-900/60 hover:text-rose-600"
+                }`}
+              />
+              <span className="font-semibold">{likesCount}</span>
+            </button>
+
+            {/* Tekil Okuma Sayısı */}
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-xs text-[#7d5f47]">
+              <Eye className="w-3.5 h-3.5 opacity-75" />
+              <span>Bu yazı <strong className="text-amber-950 font-bold">{viewsCount}</strong> defa okundu</span>
             </span>
           </div>
         </header>

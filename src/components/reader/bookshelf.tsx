@@ -7,9 +7,11 @@ import { assignShelfBookSizes } from "@/lib/book-size-utils";
 
 interface BookshelfProps {
   articles: BookArticle[];
+  topLikedIds?: Set<string>;
+  searchActive?: boolean;
 }
 
-export const Bookshelf = ({ articles }: BookshelfProps) => {
+export const Bookshelf = ({ articles, topLikedIds, searchActive = false }: BookshelfProps) => {
   // Her zaman en az 2 tam meşe raf gösterilir; kitap sayısı arttıkça 5'erli yeni raflar eklenir
   const SHELF_CAPACITY = 5;
   const MIN_SHELVES = 2;
@@ -76,12 +78,27 @@ export const Bookshelf = ({ articles }: BookshelfProps) => {
               <div className="relative z-20 hover:z-50 w-full px-2 sm:px-6 md:px-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2 sm:gap-x-4 items-end justify-items-center h-[196px] sm:h-[210px] md:h-[228px] lg:h-[248px] xl:h-[270px]">
                 {shelfBooks.length > 0 ? (
                   assignShelfBookSizes(shelfBooks, shelfIndex).map(({ book, size }, idx) => (
-                    <BookItem key={book.id} article={book} index={idx} size={size} />
+                    <BookItem
+                      key={book.id}
+                      article={book}
+                      index={idx}
+                      size={size}
+                      isTopLiked={topLikedIds?.has(book.id)}
+                    />
                   ))
                 ) : (
                   /* Boş Raf Durumu: Ekran boş kalmaz, ahşap raf atmosferi ve yönlendirme korunur */
                   <div className="col-span-full h-full flex flex-col items-center justify-center text-center px-4 py-4">
-                    {shelfIndex === 0 && articles.length === 0 ? (
+                    {shelfIndex === 0 && searchActive ? (
+                      <div className="flex flex-col items-center justify-center pointer-events-auto">
+                        <p className="font-serif text-sm sm:text-base text-[#faebd7]/95 font-medium">
+                          Aramanızla eşleşen kitap bulunamadı.
+                        </p>
+                        <p className="text-xs text-amber-200/80 mt-1 font-serif italic">
+                          Farklı bir arama terimi deneyebilir veya arama kutusunu temizleyebilirsiniz.
+                        </p>
+                      </div>
+                    ) : shelfIndex === 0 && articles.length === 0 ? (
                       <div className="flex flex-col items-center justify-center pointer-events-auto">
                         <div className="flex items-center gap-2 mb-2 opacity-80">
                           <div className="w-8 h-px bg-amber-500/50" />

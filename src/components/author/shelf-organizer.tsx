@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { BookArticle } from "@/lib/types";
 import { Book } from "@/components/ui/book";
-import { Lock, Unlock, GripVertical, Check, RefreshCw, Trash2, Edit3 } from "lucide-react";
+import { Lock, Unlock, GripVertical, Check, RefreshCw, Trash2, Edit3, Clock } from "lucide-react";
 
 interface ShelfOrganizerProps {
   articles: BookArticle[];
@@ -205,6 +205,13 @@ export const ShelfOrganizer = ({
                       <span className="text-[11px] font-serif font-medium text-center text-[#432712] mt-2 line-clamp-1 w-full">
                         {book.title}
                       </span>
+
+                      {Boolean(book.scheduledAt && new Date(book.scheduledAt) > new Date()) && (
+                        <div className="mt-1 flex items-center gap-1 text-[9px] font-serif font-semibold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-full border border-amber-400 shadow-2xs">
+                          <Clock className="w-2.5 h-2.5 text-amber-800" />
+                          <span>Planlandı</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })

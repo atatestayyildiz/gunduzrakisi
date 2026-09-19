@@ -780,9 +780,10 @@ function Controls({
 
 export interface MusicPlayerWidgetProps {
   tracks: Track[];
+  autoPlay?: boolean;
 }
 
-export function MusicPlayerWidget({ tracks }: MusicPlayerWidgetProps) {
+export function MusicPlayerWidget({ tracks, autoPlay = false }: MusicPlayerWidgetProps) {
   const ytDivId = useId().replace(/:/g, "gr");
   const yt = useYouTubePlayer(ytDivId);
 
@@ -802,7 +803,7 @@ export function MusicPlayerWidget({ tracks }: MusicPlayerWidgetProps) {
   // Init first track
   useEffect(() => {
     const id = extractYouTubeId(tracks[0]?.src);
-    if (id) yt.loadVideo(id, false);
+    if (id) yt.loadVideo(id, autoPlay);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

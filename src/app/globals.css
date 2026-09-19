@@ -391,3 +391,133 @@
   to   { opacity: 0; transform: translateX(calc(-1 * var(--gr-dx, 14px))); }
 }
 
+/* ──────────────────────── 3D Mechanical Lever Switch ──────────────────────── */
+.toggle-container {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 20;
+  cursor: pointer;
+  margin: 0;
+}
+
+.toggle-base {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #1b0e06 0%, #2e1709 50%, #150a04 100%);
+  border: 1.5px solid #8c5828;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.9),
+    0 1px 2px rgba(255, 230, 180, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.toggle-base-inside {
+  position: absolute;
+  inset: 2px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at 50% 50%, #0d0602 0%, #1c0f06 100%);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.95);
+  transition: all 0.3s ease;
+}
+
+/* Base changes when switch is active (Warm amber indicator) */
+.toggle-input:checked ~ .toggle-base {
+  border-color: #d4a359;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 10px rgba(245, 158, 11, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.toggle-input:checked ~ .toggle-base .toggle-base-inside {
+  background: radial-gradient(ellipse at 70% 50%, #78350f 0%, #2e1405 70%, #170902 100%);
+  box-shadow: inset 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.toggle-handle-wrapper {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  z-index: 10;
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.34, 1.35, 0.64, 1);
+  transform: translateX(0);
+}
+
+.toggle-input:checked ~ .toggle-handle-wrapper {
+  transform: translateX(24px);
+}
+
+.toggle-handle {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.28s ease;
+  transform: rotate(-16deg);
+}
+
+.toggle-input:checked ~ .toggle-handle-wrapper .toggle-handle {
+  transform: rotate(16deg);
+}
+
+/* Polished metallic knob */
+.toggle-handle-knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff6e0 0%, #d4a359 40%, #916124 75%, #422609 100%);
+  border: 1px solid #ffe3a3;
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.7),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.6);
+  z-index: 2;
+  transition: all 0.28s ease;
+}
+
+.toggle-input:checked ~ .toggle-handle-wrapper .toggle-handle-knob {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f59e0b 35%, #b45309 75%, #451a03 100%);
+  box-shadow: 
+    0 2px 8px rgba(245, 158, 11, 0.5),
+    inset 0 1px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.toggle-handle-bar-wrapper {
+  position: absolute;
+  bottom: 0;
+  width: 4px;
+  height: 10px;
+  z-index: 1;
+}
+
+.toggle-handle-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #593315 0%, #dfb87a 40%, #824f1b 100%);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+

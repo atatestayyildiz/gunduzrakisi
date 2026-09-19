@@ -12,9 +12,10 @@ interface BookItemProps {
   article: BookArticle;
   index: number;
   size?: BookSizePreset;
+  isTopLiked?: boolean;
 }
 
-export const BookItem = ({ article, size }: BookItemProps) => {
+export const BookItem = ({ article, size, isTopLiked = false }: BookItemProps) => {
   const router = useRouter();
   const [openingRect, setOpeningRect] = useState<{
     top: number;
@@ -55,6 +56,7 @@ export const BookItem = ({ article, size }: BookItemProps) => {
             textured={article.textured}
             coverImage={article.coverImage}
             heightRatio={effectiveHeightRatio}
+            isTopLiked={isTopLiked}
             width={{
               sm: Math.round(140 * scale),
               md: Math.round(165 * scale),

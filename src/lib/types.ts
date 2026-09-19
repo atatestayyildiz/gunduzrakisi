@@ -23,6 +23,9 @@ export interface BookArticle {
   fontFamily?: "serif" | "typewriter" | "sans";
   fontSize?: "small" | "medium" | "large";
   createdAt?: string;
+  likes?: number;
+  views?: number;
+  scheduledAt?: string; // ISO date string e.g. "2026-09-25T14:30:00.000Z"
 }
 
 export interface CategoryItem {

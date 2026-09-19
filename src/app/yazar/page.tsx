@@ -84,6 +84,7 @@ export default function WriterPage() {
   const [musicCover, setMusicCover] = useState("");
   const [fontFamily, setFontFamily] = useState<"serif" | "typewriter" | "sans">("serif");
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
+  const [scheduledAt, setScheduledAt] = useState<string | undefined>(undefined);
 
   // In-site deletion modal state
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -299,6 +300,7 @@ export default function WriterPage() {
     setMusicCover(art.musicCover || "");
     setFontFamily(art.fontFamily || "serif");
     setFontSize(art.fontSize || "medium");
+    setScheduledAt(art.scheduledAt || undefined);
     setActiveTab("write");
   };
 
@@ -359,6 +361,7 @@ export default function WriterPage() {
     setMusicCover("");
     setFontFamily("serif");
     setFontSize("medium");
+    setScheduledAt(undefined);
   };
 
   // Save as draft
@@ -407,6 +410,9 @@ export default function WriterPage() {
       fontFamily,
       fontSize,
       createdAt: editingId ? (articles.find((a) => a.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      likes: editingId ? (articles.find((a) => a.id === editingId)?.likes ?? 0) : 0,
+      views: editingId ? (articles.find((a) => a.id === editingId)?.views ?? 0) : 0,
+      scheduledAt: scheduledAt || undefined,
     };
 
     await saveArticle(articleToSave);
@@ -421,7 +427,7 @@ export default function WriterPage() {
     setTimeout(() => setNotice(null), 4000);
   };
 
-  // Save to shelf (Publish)
+  // Save to shelf (Publish or Schedule)
   const handleSaveToShelf = async () => {
     if (!title.trim()) {
       alert("Lütfen denemeniz için bir başlık belirleyin.");
@@ -448,6 +454,8 @@ export default function WriterPage() {
       year: "numeric",
     });
 
+    const isFutureScheduled = Boolean(scheduledAt && new Date(scheduledAt) > new Date());
+
     const articleToSave: BookArticle = {
       id: editingId || `art_${Date.now()}`,
       slug,
@@ -473,16 +481,24 @@ export default function WriterPage() {
       fontFamily,
       fontSize,
       createdAt: editingId ? (articles.find((a) => a.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      likes: editingId ? (articles.find((a) => a.id === editingId)?.likes ?? 0) : 0,
+      views: editingId ? (articles.find((a) => a.id === editingId)?.views ?? 0) : 0,
+      scheduledAt: scheduledAt || undefined,
     };
 
     await saveArticle(articleToSave);
 
     const updatedArticles = await getArticles();
     setArticles(updatedArticles);
-
+    setEditingId(articleToSave.id);
     setIsSaving(false);
     setIsDrawerOpen(false);
-    setNotice(`"${articleToSave.title}" başarıyla kitaplık rafına yerleştirildi!`);
+
+    if (isFutureScheduled) {
+      setNotice(`"${title.trim()}" belirlenen tarihte yayınlanmak üzere planlandı.`);
+    } else {
+      setNotice(`"${title.trim()}" kütüphane raflarına başarıyla yerleştirildi!`);
+    }
 
     setTimeout(() => setNotice(null), 5000);
   };
@@ -1016,6 +1032,8 @@ export default function WriterPage() {
         onDeleteCategory={handleDeleteCategory}
         date={date}
         onDateChange={setDate}
+        scheduledAt={scheduledAt}
+        onScheduledAtChange={setScheduledAt}
         onSaveAsDraft={handleSaveAsDraft}
         coverColor={coverColor}
         onCoverColorChange={setCoverColor}

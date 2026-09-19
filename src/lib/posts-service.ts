@@ -8,6 +8,8 @@ import {
   getDocs,
   setDoc,
   deleteDoc,
+  updateDoc,
+  increment,
   query,
   orderBy
 } from "firebase/firestore";
@@ -128,6 +130,87 @@ export async function saveArticle(article: BookArticle): Promise<void> {
       console.error("Local storage save error:", e);
     }
   }
+}
+
+/**
+ * Toggles like for an article and returns the new like count.
+ */
+export async function toggleArticleLike(articleId: string, shouldLike: boolean): Promise<number> {
+  let newLikes = 0;
+  const delta = shouldLike ? 1 : -1;
+
+  // 1. Update LocalStorage first for instant responsiveness
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+      if (stored) {
+        const currentList = JSON.parse(stored) as BookArticle[];
+        const idx = currentList.findIndex((a) => a.id === articleId);
+        if (idx >= 0) {
+          const currentLikes = currentList[idx].likes || 0;
+          newLikes = Math.max(0, currentLikes + delta);
+          currentList[idx].likes = newLikes;
+          localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(currentList));
+        }
+      }
+    } catch (e) {
+      console.error("Local storage like update error:", e);
+    }
+  }
+
+  // 2. Sync with Firestore
+  if (isFirebaseConfigured && db) {
+    try {
+      const artRef = doc(db, "articles", articleId);
+      await updateDoc(artRef, {
+        likes: increment(delta),
+      });
+    } catch (err) {
+      console.error("Firestore toggleArticleLike error:", err);
+    }
+  }
+
+  return newLikes;
+}
+
+/**
+ * Increments view count for an article after reader spends >5s.
+ */
+export async function incrementArticleViews(articleId: string): Promise<number> {
+  let newViews = 0;
+
+  // 1. Update LocalStorage
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+      if (stored) {
+        const currentList = JSON.parse(stored) as BookArticle[];
+        const idx = currentList.findIndex((a) => a.id === articleId);
+        if (idx >= 0) {
+          const currentViews = currentList[idx].views || 0;
+          newViews = currentViews + 1;
+          currentList[idx].views = newViews;
+          localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(currentList));
+        }
+      }
+    } catch (e) {
+      console.error("Local storage view update error:", e);
+    }
+  }
+
+  // 2. Sync with Firestore
+  if (isFirebaseConfigured && db) {
+    try {
+      const artRef = doc(db, "articles", articleId);
+      await updateDoc(artRef, {
+        views: increment(1),
+      });
+    } catch (err) {
+      console.error("Firestore incrementArticleViews error:", err);
+    }
+  }
+
+  return newViews;
 }
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { BookArticle, CategoryItem } from "@/lib/types";
 import { getArticles, getCategories } from "@/lib/posts-service";
 import { BookshelfHeader } from "@/components/reader/bookshelf-header";
@@ -10,6 +10,7 @@ export default function HomePage() {
   const [articles, setArticles] = useState<BookArticle[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,11 +26,57 @@ export default function HomePage() {
     initData();
   }, []);
 
-  const filteredArticles = articles.filter((art) => {
-    if (art.isDraft) return false;
-    if (selectedCategory === "all") return true;
-    return art.category === selectedCategory;
-  });
+  // 1. Ziyaretçilere açık olan (taslak olmayan ve ileri tarihe planlanmamış) yazılar
+  const publishedArticles = useMemo(() => {
+    const now = new Date();
+    return articles.filter((art) => {
+      if (art.isDraft) return false;
+      if (art.scheduledAt) {
+        const scheduledDate = new Date(art.scheduledAt);
+        if (!isNaN(scheduledDate.getTime()) && scheduledDate > now) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [articles]);
+
+  // 2. En Beğenilen ilk 5 kitap (En az 1 like almış ve beğeni sayısına göre çoktan aza sıralı)
+  const topLikedArticles = useMemo(() => {
+    return [...publishedArticles]
+      .filter((a) => (a.likes || 0) > 0)
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, 5);
+  }, [publishedArticles]);
+
+  const topLikedIds = useMemo(() => {
+    return new Set(topLikedArticles.map((a) => a.id));
+  }, [topLikedArticles]);
+
+  // 3. Kategori ve Dinamik Arama Filtrelemesi
+  const filteredArticles = useMemo(() => {
+    let list = publishedArticles;
+
+    // Kategori Filtresi
+    if (selectedCategory === "top-liked") {
+      list = topLikedArticles;
+    } else if (selectedCategory !== "all") {
+      list = list.filter((art) => art.category === selectedCategory);
+    }
+
+    // Dinamik Arama (Başlık, içerik veya özet içinde kelime / kelime grubu)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLocaleLowerCase("tr-TR");
+      list = list.filter((art) => {
+        const title = (art.title || "").toLocaleLowerCase("tr-TR");
+        const content = (art.content || "").toLocaleLowerCase("tr-TR");
+        const excerpt = (art.excerpt || "").toLocaleLowerCase("tr-TR");
+        return title.includes(q) || content.includes(q) || excerpt.includes(q);
+      });
+    }
+
+    return list;
+  }, [publishedArticles, topLikedArticles, selectedCategory, searchQuery]);
 
   return (
     <div className="min-h-screen plaster-wall flex flex-col justify-between selection:bg-amber-800/20">
@@ -41,6 +88,8 @@ export default function HomePage() {
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             totalBooks={filteredArticles.length}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           />
         </div>
 
@@ -53,7 +102,11 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <Bookshelf articles={filteredArticles} />
+            <Bookshelf
+              articles={filteredArticles}
+              topLikedIds={topLikedIds}
+              searchActive={Boolean(searchQuery.trim())}
+            />
           )}
         </div>
       </div>

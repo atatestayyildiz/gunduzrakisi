@@ -3,10 +3,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { CategoryItem } from "@/lib/types";
-import { ChevronDown, Check, BookMarked, Feather, Search, X, Camera } from "lucide-react";
+import { ChevronDown, Check, BookMarked, Feather, Search, X } from "lucide-react";
 import { LeverSwitch } from "@/components/ui/lever-switch";
-import { getAuthorProfileImage, saveAuthorProfileImage } from "@/lib/posts-service";
-import { convertToWebP } from "@/lib/image-utils";
+import { getAuthorProfileImage } from "@/lib/posts-service";
 
 interface BookshelfHeaderProps {
   categories: CategoryItem[];
@@ -163,7 +162,7 @@ export const BookshelfHeader = ({
             {/* Yazar Girişi Varsa: Ortalanmış Portre */}
             {isAuthorAuthenticated && (
               <div className="shrink-0 flex justify-center">
-                <MertPortrait isAuthor={isAuthorAuthenticated} />
+                <MertPortrait />
               </div>
             )}
 
@@ -185,7 +184,7 @@ export const BookshelfHeader = ({
                   <span>Yazar Odasına Dön</span>
                 </Link>
               ) : (
-                <MertPortrait isAuthor={false} />
+                <MertPortrait />
               )}
             </div>
           </div>
@@ -280,9 +279,8 @@ export const BookshelfHeader = ({
   );
 };
 
-function MertPortrait({ isAuthor = false }: { isAuthor?: boolean }) {
+function MertPortrait() {
   const [imgUrl, setImgUrl] = useState<string>("/textures/mert_kip.jpg");
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     async function loadImg() {
@@ -292,40 +290,12 @@ function MertPortrait({ isAuthor = false }: { isAuthor?: boolean }) {
     loadImg();
   }, []);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const res = await convertToWebP(file, 400, 400, 0.85);
-      await saveAuthorProfileImage(res.dataUrl);
-      setImgUrl(res.dataUrl);
-    } catch (err) {
-      console.error("Görsel yüklenemedi:", err);
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
   return (
     <div className="flex flex-col items-center select-none shrink-0 group">
-      {isAuthor && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleUpload}
-        />
-      )}
       {/* Masif Ahşap & Yaldızlı Çerçeve */}
       <div
-        onClick={() => {
-          if (isAuthor) fileInputRef.current?.click();
-        }}
-        className={`relative p-1.5 sm:p-2 rounded-full border-2 border-[#1a0c04] shadow-[0_10px_25px_rgba(0,0,0,0.85),inset_0_2px_4px_rgba(255,255,255,0.18)] transition-transform duration-300 group-hover:scale-102 ${
-          isAuthor ? "cursor-pointer" : ""
-        }`}
-        title={isAuthor ? "Fotoğrafı Değiştir" : "Mert Kip"}
+        className="relative p-1.5 sm:p-2 rounded-full border-2 border-[#1a0c04] shadow-[0_10px_25px_rgba(0,0,0,0.85),inset_0_2px_4px_rgba(255,255,255,0.18)] transition-transform duration-300 group-hover:scale-102"
+        title="Mert Kip"
         style={{
           backgroundColor: "#2c1407",
           backgroundImage: `linear-gradient(145deg, #3d1c0b 0%, #1a0a03 100%), url('/textures/oak_wood.jpg')`,
@@ -340,11 +310,6 @@ function MertPortrait({ isAuthor = false }: { isAuthor?: boolean }) {
               alt="Mert Kip"
               className="w-full h-full object-cover object-top filter contrast-[1.04] brightness-[0.98] group-hover:scale-105 transition-transform duration-500"
             />
-            {isAuthor && (
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="w-5 h-5 text-amber-200" />
-              </div>
-            )}
           </div>
         </div>
       </div>

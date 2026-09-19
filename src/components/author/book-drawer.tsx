@@ -133,6 +133,9 @@ export const BookDrawer = ({
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<"category" | "music" | null>(null);
+  const [isYaziDatePickerOpen, setIsYaziDatePickerOpen] = useState(false);
+  const [isScheduleDatePickerOpen, setIsScheduleDatePickerOpen] = useState(false);
+  const [isScheduleTimePickerOpen, setIsScheduleTimePickerOpen] = useState(false);
   const [isScheduled, setIsScheduled] = useState(Boolean(scheduledAt));
   const [scheduleDate, setScheduleDate] = useState(() => {
     if (scheduledAt) return scheduledAt.slice(0, 10);
@@ -659,7 +662,11 @@ export const BookDrawer = ({
           </div>
 
           {/* Yazı Tarihi */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2 relative z-30">
+          <div
+            className={`p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2 relative transition-all ${
+              isYaziDatePickerOpen ? "z-50" : "z-30"
+            }`}
+          >
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-amber-800" />
@@ -690,11 +697,16 @@ export const BookDrawer = ({
               placeholder="Örn: 19 Eylül 2026"
               formatAsTurkish={true}
               align="left"
+              onOpenChange={setIsYaziDatePickerOpen}
             />
           </div>
 
           {/* İleri Tarihli Paylaşım (Zamanlayıcı & Lever Switch) */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-3 relative z-20">
+          <div
+            className={`p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-3 relative transition-all ${
+              isScheduleDatePickerOpen || isScheduleTimePickerOpen ? "z-50" : "z-25"
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-amber-800 shrink-0" />
@@ -747,6 +759,7 @@ export const BookDrawer = ({
                       }}
                       formatAsTurkish={false}
                       align="left"
+                      onOpenChange={setIsScheduleDatePickerOpen}
                     />
                   </div>
                   {/* Saat */}
@@ -763,6 +776,7 @@ export const BookDrawer = ({
                         }
                       }}
                       align="right"
+                      onOpenChange={setIsScheduleTimePickerOpen}
                     />
                   </div>
                 </div>
@@ -772,8 +786,8 @@ export const BookDrawer = ({
 
           {/* Müzik Eşlikçisi (Tek Seçim Kutusu) */}
           <div
-            className={`p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative ${
-              openDropdown === "music" ? "z-40" : "z-20"
+            className={`p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5 relative transition-all ${
+              openDropdown === "music" ? "z-40" : "z-10"
             }`}
           >
             <div className="flex items-center justify-between">

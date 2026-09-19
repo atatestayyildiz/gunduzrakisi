@@ -9,6 +9,7 @@ interface AntiqueTimePickerProps {
   placeholder?: string;
   className?: string;
   align?: "left" | "right";
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 const PRESET_TIMES = [
@@ -25,9 +26,15 @@ export const AntiqueTimePicker: React.FC<AntiqueTimePickerProps> = ({
   placeholder = "Saat Seçin",
   className = "",
   align = "left",
+  onOpenChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleOpen = (newVal: boolean) => {
+    setIsOpen(newVal);
+    onOpenChange?.(newVal);
+  };
 
   const [selectedHour, setSelectedHour] = useState(() => {
     return value && value.includes(":") ? value.split(":")[0].padStart(2, "0") : "12";
@@ -49,7 +56,7 @@ export const AntiqueTimePicker: React.FC<AntiqueTimePickerProps> = ({
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+        toggleOpen(false);
       }
     };
     if (isOpen) {
@@ -73,7 +80,7 @@ export const AntiqueTimePicker: React.FC<AntiqueTimePickerProps> = ({
     setSelectedHour(h);
     setSelectedMinute(m);
     onChange(timeStr);
-    setIsOpen(false);
+    toggleOpen(false);
   };
 
   const handleNowSelect = () => {
@@ -83,7 +90,7 @@ export const AntiqueTimePicker: React.FC<AntiqueTimePickerProps> = ({
     setSelectedHour(h);
     setSelectedMinute(m);
     onChange(`${h}:${m}`);
-    setIsOpen(false);
+    toggleOpen(false);
   };
 
   const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
@@ -94,7 +101,7 @@ export const AntiqueTimePicker: React.FC<AntiqueTimePickerProps> = ({
       {/* Display trigger button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => toggleOpen(!isOpen)}
         className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-[#c5ab8d] hover:border-amber-800 focus:outline-hidden focus:ring-2 focus:ring-amber-800/20 shadow-xs text-xs font-serif text-[#3b200b] transition-all cursor-pointer text-left"
       >
         <div className="flex items-center gap-2 truncate">
@@ -209,7 +216,7 @@ export const AntiqueTimePicker: React.FC<AntiqueTimePickerProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={() => toggleOpen(false)}
               className="px-3 py-1 rounded-lg bg-amber-800/80 hover:bg-amber-700 text-xs font-serif text-amber-100 transition-colors cursor-pointer font-semibold"
             >
               Tamam

@@ -516,4 +516,54 @@ export async function saveAuthorPasscode(newPasscode: string): Promise<void> {
   }
 }
 
+const LOCAL_STORAGE_AUTHOR_PROFILE_KEY = "gunduz_rakisi_author_profile_v1";
+
+/**
+ * Gets the author profile image data URL from Firestore (with LocalStorage fallback).
+ */
+export async function getAuthorProfileImage(): Promise<string | null> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await getDoc(doc(db, "settings", "author_profile"));
+      if (snap.exists() && snap.data()?.profileImage) {
+        const img = snap.data().profileImage as string;
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LOCAL_STORAGE_AUTHOR_PROFILE_KEY, img);
+        }
+        return img;
+      }
+    } catch (err) {
+      console.warn("Firestore author profile fetch failed:", err);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    return localStorage.getItem(LOCAL_STORAGE_AUTHOR_PROFILE_KEY);
+  }
+
+  return null;
+}
+
+/**
+ * Saves a new author profile image data URL to Firestore and LocalStorage,
+ * cleanly overwriting and deleting any previous image.
+ */
+export async function saveAuthorProfileImage(dataUrl: string): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(doc(db, "settings", "author_profile"), {
+        profileImage: dataUrl,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Firestore author profile save error:", err);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_STORAGE_AUTHOR_PROFILE_KEY, dataUrl);
+  }
+}
+
+
 

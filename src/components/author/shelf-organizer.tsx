@@ -26,6 +26,15 @@ export const ShelfOrganizer = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // En Beğenilen ilk 5 kitap (En az 1 like almış ve beğeniye göre sıralı)
+  const topLikedIds = React.useMemo(() => {
+    const sorted = [...articles]
+      .filter((a) => (a.likes || 0) > 0)
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, 5);
+    return new Set(sorted.map((a) => a.id));
+  }, [articles]);
+
   // Group books into shelves of 5 (En az 2 raf mutlaka gösterilir)
   const SHELF_SIZE = 5;
   const MIN_SHELVES = 2;
@@ -68,13 +77,18 @@ export const ShelfOrganizer = ({
     setDragOverIndex(null);
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    await onSaveOrder(articles);
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setIsLocked(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
+  // Kilidi aç veya kilidi kapatıp otomatik kaydet
+  const handleToggleLock = async () => {
+    if (isLocked) {
+      setIsLocked(false);
+    } else {
+      setIsSaving(true);
+      await onSaveOrder(articles);
+      setIsSaving(false);
+      setSaveSuccess(true);
+      setIsLocked(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    }
   };
 
   return (
@@ -84,14 +98,27 @@ export const ShelfOrganizer = ({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setIsLocked(!isLocked)}
+            onClick={handleToggleLock}
+            disabled={isSaving}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all shadow-xs cursor-pointer ${
-              isLocked
+              isSaving
+                ? "bg-amber-800/80 text-amber-100"
+                : isLocked
                 ? "bg-[#3f220d] text-amber-100 hover:bg-[#573013]"
-                : "bg-amber-600 text-white ring-2 ring-amber-400 animate-pulse"
+                : "bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-600 hover:to-amber-700 text-white shadow-md border border-amber-500/40"
             }`}
           >
-            {isLocked ? (
+            {isSaving ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-200" />
+                <span>Sıralama Kaydediliyor...</span>
+              </>
+            ) : saveSuccess ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-300" />
+                <span>Kaydedildi & Kilitlendi</span>
+              </>
+            ) : isLocked ? (
               <>
                 <Lock className="w-3.5 h-3.5" />
                 <span>Raf Kilidi Kapalı (Kilidi Aç)</span>
@@ -99,7 +126,7 @@ export const ShelfOrganizer = ({
             ) : (
               <>
                 <Unlock className="w-3.5 h-3.5" />
-                <span>Kilidi Kapat & Bitir</span>
+                <span>Kilidi Kapat & Bitir (Kaydet)</span>
               </>
             )}
           </button>
@@ -107,25 +134,9 @@ export const ShelfOrganizer = ({
           <span className="text-xs font-serif text-[#6a4c33]">
             {isLocked
               ? "Sıralamayı değiştirmek için önce kilidi açın."
-              : "Kitapları sürükleyip istediğiniz rafa veya sıraya taşıyabilirsiniz."}
+              : "Kitapları sürükleyip istediğiniz sıraya taşıyın, işiniz bitince 'Kilidi Kapat & Bitir'e basın."}
           </span>
         </div>
-
-        {!isLocked && (
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-semibold transition-all shadow-md cursor-pointer disabled:opacity-50"
-          >
-            {isSaving ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : saveSuccess ? (
-              <Check className="w-3.5 h-3.5" />
-            ) : null}
-            <span>{saveSuccess ? "Sıralama Kaydedildi!" : "Yeni Raf Sırasını Kaydet"}</span>
-          </button>
-        )}
       </div>
 
       {/* Visual Shelves for Drag & Drop */}
@@ -200,6 +211,7 @@ export const ShelfOrganizer = ({
                         coverImage={book.coverImage}
                         heightRatio={book.heightRatio || 1}
                         width={130}
+                        isTopLiked={topLikedIds.has(book.id)}
                       />
 
                       <span className="text-[11px] font-serif font-medium text-center text-[#432712] mt-2 line-clamp-1 w-full">

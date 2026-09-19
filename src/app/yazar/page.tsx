@@ -17,6 +17,8 @@ import {
   saveMusicTrack,
   deleteMusicTrack,
   getAuthorPasscode,
+  getAuthorProfileImage,
+  saveAuthorProfileImage,
 } from "@/lib/posts-service";
 import { cleanPastedText, calculateSips, getCleanExcerpt } from "@/lib/text-cleaner";
 import { slugify } from "@/lib/slug-utils";
@@ -45,7 +47,8 @@ import {
   Trash2,
   KeyRound,
   Key,
-  LogOut
+  LogOut,
+  Camera,
 } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
 
@@ -188,6 +191,23 @@ export default function WriterPage() {
     }
   };
 
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const profileFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await convertToWebP(file, 400, 400, 0.85);
+      await saveAuthorProfileImage(res.dataUrl);
+      setProfileImage(res.dataUrl);
+    } catch (err) {
+      console.error("Profil resmi optimize edilemedi:", err);
+    } finally {
+      if (profileFileInputRef.current) profileFileInputRef.current.value = "";
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("gunduz_rakisi_author_auth");
     setIsAuthenticated(false);
@@ -196,14 +216,18 @@ export default function WriterPage() {
 
   useEffect(() => {
     async function loadData() {
-      const [art, cat, mus] = await Promise.all([
+      const [art, cat, mus, pImg] = await Promise.all([
         getArticles(),
         getCategories(),
         getMusicTracks(),
+        getAuthorProfileImage(),
       ]);
       setArticles(art);
       setCategories(cat);
       setMusicTracks(mus);
+      if (pImg) {
+        setProfileImage(pImg);
+      }
       if (cat.length > 1) {
         setCategory(cat[1].id);
       }
@@ -614,11 +638,86 @@ export default function WriterPage() {
       {/* Pastoral Sunlight & Floating Dust Motes */}
       <PastoralBackground />
 
-      {/* Top Bar / Navigation (Derli Toplu, Modern & Antika Yerleşke) */}
-      <header className="shrink-0 z-30 bg-[#f7f3eb]/92 backdrop-blur-md border-b border-[#d8cbb9] shadow-[0_2px_8px_rgba(0,0,0,0.04)] px-3 sm:px-6 py-2.5">
-        <div className="w-full flex items-center justify-between gap-3 lg:pr-[336px]">
-          {/* SOL: Navigasyon, Kimlik & Hızlı Yazar Araçları */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      {/* Top Bar / Navigation (Derli Toplu, Modern, Antika & KESİN Ortalanmış Yerleşke) */}
+      <header className="shrink-0 z-30 bg-[#f7f3eb]/92 backdrop-blur-md border-b border-[#d8cbb9] shadow-[0_2px_8px_rgba(0,0,0,0.04)] px-3 sm:px-6 py-2.5 relative min-h-[56px] flex items-center">
+        {/* Gizli File Input: Yazar Profil Resmini Değiştirme */}
+        <input
+          ref={profileFileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleProfileImageChange}
+        />
+
+        {/* ORTA: Sekmeler — Ekranda Matematiksel Olarak KESİN Ortalanmış & Sabit (Hiçbir sekme değişiminde oynamaz) */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 flex justify-center">
+          <nav className="pointer-events-auto flex items-center gap-1 p-1 rounded-xl bg-[#ece3d4] border border-[#d2c0aa] shadow-inner select-none">
+            <button
+              type="button"
+              onClick={() => setActiveTab("write")}
+              className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-xs font-serif font-semibold transition-colors cursor-pointer ${
+                activeTab === "write"
+                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
+                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
+              }`}
+            >
+              <Edit className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Daktilo & Yazı</span>
+              <span className="sm:hidden">Yazı</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("drafts")}
+              className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-xs font-serif font-semibold transition-colors cursor-pointer ${
+                activeTab === "drafts"
+                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
+                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Taslaklar</span>
+              {drafts.length > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "drafts"
+                      ? "bg-amber-200 text-amber-950"
+                      : "bg-black/10 text-[#4a2e17]"
+                  }`}
+                >
+                  {drafts.length}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("shelves")}
+              className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-xs font-serif font-semibold transition-colors cursor-pointer ${
+                activeTab === "shelves"
+                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
+                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Raflar</span>
+              {published.length > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "shelves"
+                      ? "bg-amber-200 text-amber-950"
+                      : "bg-black/10 text-[#4a2e17]"
+                  }`}
+                >
+                  {published.length}
+                </span>
+              )}
+            </button>
+          </nav>
+        </div>
+
+        {/* Üst Bar Sol ve Sağ Bölümleri */}
+        <div className="w-full flex items-center justify-between gap-3">
+          {/* SOL: Navigasyon, Profil Resmi, Kimlik & Hızlı Yazar Araçları */}
+          <div className="relative z-20 flex items-center gap-2 sm:gap-2.5 shrink-0">
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-serif font-medium text-[#4a2e17] hover:text-[#1a0e05] bg-[#ece3d4]/70 hover:bg-[#e4d8c5] border border-[#d2c0aa]/80 transition-all shadow-2xs group"
@@ -629,6 +728,24 @@ export default function WriterPage() {
             </Link>
 
             <div className="h-4 w-[1px] bg-[#d2c0aa]" />
+
+            {/* Yazar Profil Resmi Avatarı & Tıkla Değiştir */}
+            <div
+              className="relative group/avatar cursor-pointer"
+              onClick={() => profileFileInputRef.current?.click()}
+              title="Profil Resmini Değiştir"
+            >
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border-2 border-[#8c5828] shadow-xs relative bg-[#241004] transition-transform group-hover/avatar:scale-105">
+                <img
+                  src={profileImage || "/textures/mert_kip.jpg"}
+                  alt="Mert Kip"
+                  className="w-full h-full object-cover object-top filter contrast-[1.03]"
+                />
+                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                  <Camera className="w-3.5 h-3.5 text-amber-200" />
+                </div>
+              </div>
+            </div>
 
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-950/5">
               <Feather className="w-3.5 h-3.5 text-amber-800 shrink-0" />
@@ -660,71 +777,8 @@ export default function WriterPage() {
             </div>
           </div>
 
-          {/* ORTA: Sekmeler (Daktilo & Yazı, Taslaklar, Raflar) */}
-          <nav className="flex items-center gap-1 p-1 rounded-xl bg-[#ece3d4] border border-[#d2c0aa] shadow-inner shrink-0">
-            <button
-              type="button"
-              onClick={() => setActiveTab("write")}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-serif transition-all cursor-pointer ${
-                activeTab === "write"
-                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm font-semibold"
-                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
-              }`}
-            >
-              <Edit className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Daktilo & Yazı</span>
-              <span className="sm:hidden">Yazı</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("drafts")}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-serif transition-all cursor-pointer ${
-                activeTab === "drafts"
-                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm font-semibold"
-                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Taslaklar</span>
-              {drafts.length > 0 && (
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === "drafts"
-                      ? "bg-amber-200 text-amber-950"
-                      : "bg-black/10 text-[#4a2e17]"
-                  }`}
-                >
-                  {drafts.length}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("shelves")}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-serif transition-all cursor-pointer ${
-                activeTab === "shelves"
-                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm font-semibold"
-                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Raflar</span>
-              {published.length > 0 && (
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === "shelves"
-                      ? "bg-amber-200 text-amber-950"
-                      : "bg-black/10 text-[#4a2e17]"
-                  }`}
-                >
-                  {published.length}
-                </span>
-              )}
-            </button>
-          </nav>
-
           {/* SAĞ: Aksiyon Butonları (Taslak Kaydet & Ciltle/Rafa Koy) */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="relative z-20 flex items-center gap-2 shrink-0 ml-auto lg:mr-[336px]">
             {activeTab === "write" && (
               <>
                 <button

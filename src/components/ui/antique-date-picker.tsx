@@ -10,6 +10,7 @@ interface AntiqueDatePickerProps {
   className?: string;
   formatAsTurkish?: boolean;
   align?: "left" | "right";
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 const TURKISH_MONTHS = [
@@ -55,9 +56,15 @@ export const AntiqueDatePicker: React.FC<AntiqueDatePickerProps> = ({
   className = "",
   formatAsTurkish = true,
   align = "left",
+  onOpenChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleOpen = (newVal: boolean) => {
+    setIsOpen(newVal);
+    onOpenChange?.(newVal);
+  };
 
   const initialDate = parseInitialDate(value);
   const [viewYear, setViewYear] = useState(initialDate.getFullYear());
@@ -67,7 +74,7 @@ export const AntiqueDatePicker: React.FC<AntiqueDatePickerProps> = ({
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+        toggleOpen(false);
       }
     };
     if (isOpen) {
@@ -115,7 +122,7 @@ export const AntiqueDatePicker: React.FC<AntiqueDatePickerProps> = ({
     });
 
     onChange(formatAsTurkish ? trStr : isoStr, isoStr);
-    setIsOpen(false);
+    toggleOpen(false);
   };
 
   const handleSelectToday = (e: React.MouseEvent) => {
@@ -128,7 +135,7 @@ export const AntiqueDatePicker: React.FC<AntiqueDatePickerProps> = ({
       year: "numeric",
     });
     onChange(formatAsTurkish ? trStr : isoStr, isoStr);
-    setIsOpen(false);
+    toggleOpen(false);
   };
 
   // Calendar math:
@@ -166,7 +173,7 @@ export const AntiqueDatePicker: React.FC<AntiqueDatePickerProps> = ({
       {/* Display trigger button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => toggleOpen(!isOpen)}
         className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl bg-white border border-[#c5ab8d] hover:border-amber-800 focus:outline-hidden focus:ring-2 focus:ring-amber-800/20 shadow-xs text-xs font-serif text-[#3b200b] transition-all cursor-pointer text-left"
       >
         <div className="flex items-center gap-1.5 truncate">
@@ -265,7 +272,7 @@ export const AntiqueDatePicker: React.FC<AntiqueDatePickerProps> = ({
 
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={() => toggleOpen(false)}
               className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-serif text-[#faeedd] transition-colors cursor-pointer"
             >
               Kapat

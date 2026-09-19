@@ -162,11 +162,20 @@
 .gr-player-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px 12px;
-  width: 312px;
+  gap: 12px;
+  padding: 12px 14px 10px;
+  width: 100%;
+  max-width: 312px;
   position: relative;
   overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .gr-player-card {
+    gap: 10px;
+    padding: 10px 12px 8px;
+    max-width: 280px;
+  }
 }
 
 /* Subtle amber shimmer when playing */
@@ -181,8 +190,8 @@
 /* ── Disc ─────────────────────────────────────────────── */
 
 .gr-disc-mask {
-  width: 88px;
-  height: 88px;
+  width: 86px;
+  height: 86px;
   border-radius: 50%;
   overflow: hidden;
   position: relative;
@@ -191,6 +200,13 @@
     0 0 0 2px rgba(212,175,55,0.18),
     0 4px 24px rgba(0,0,0,0.85),
     inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+@media (max-width: 640px) {
+  .gr-disc-mask {
+    width: 74px;
+    height: 74px;
+  }
 }
 
 .gr-disc-spin {

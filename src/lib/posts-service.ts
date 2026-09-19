@@ -20,6 +20,64 @@ const LOCAL_STORAGE_ARTICLES_KEY = "gunduz_rakisi_articles_v5";
 const LOCAL_STORAGE_CATEGORIES_KEY = "gunduz_rakisi_categories_v5";
 const LOCAL_STORAGE_MUSIC_KEY = "gunduz_rakisi_music_tracks_v1";
 
+let memoryArticlesCache: BookArticle[] | null = null;
+let memoryCategoriesCache: CategoryItem[] | null = null;
+let memoryTracksCache: MusicTrack[] | null = null;
+
+/**
+ * Wraps a promise with a timeout so mobile cellular networks never hang indefinitely.
+ */
+function withTimeout<T>(promise: Promise<T>, ms = 2500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
+/**
+ * Synchronous local cache reader for zero-delay initial render on mobile.
+ */
+export function getCachedArticlesSync(): BookArticle[] {
+  if (memoryArticlesCache && memoryArticlesCache.length > 0) {
+    return memoryArticlesCache;
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as BookArticle[];
+        if (parsed && parsed.length > 0) {
+          const sorted = parsed.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          memoryArticlesCache = sorted;
+          return sorted;
+        }
+      }
+    } catch {}
+  }
+  return [];
+}
+
+export function getCachedCategoriesSync(): CategoryItem[] {
+  if (memoryCategoriesCache && memoryCategoriesCache.length > 0) {
+    return memoryCategoriesCache;
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_CATEGORIES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as CategoryItem[];
+        if (parsed && parsed.length > 0) {
+          memoryCategoriesCache = parsed;
+          return parsed;
+        }
+      }
+    } catch {}
+  }
+  return INITIAL_CATEGORIES;
+}
+
 /**
  * Strips all undefined fields from an object so Firestore setDoc does not throw errors.
  */
@@ -37,16 +95,23 @@ export function cleanForFirestore<T extends Record<string, any>>(obj: T): Record
  * Gets all articles sorted by order.
  */
 export async function getArticles(): Promise<BookArticle[]> {
-  // 1. Try Firestore if configured
+  // 1. Try Firestore with timeout if configured
   if (isFirebaseConfigured && db) {
     try {
-      const snap = await getDocs(collection(db, "articles"));
+      const snap = await withTimeout(getDocs(collection(db, "articles")), 2500);
       if (!snap.empty) {
         const list: BookArticle[] = [];
         snap.forEach((d) => {
           list.push({ ...d.data(), id: d.id } as BookArticle);
         });
-        return list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const sorted = list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        memoryArticlesCache = sorted;
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(sorted));
+          } catch {}
+        }
+        return sorted;
       } else {
         // If Firestore is empty, check if LocalStorage has existing articles to migrate
         if (typeof window !== "undefined") {
@@ -61,17 +126,24 @@ export async function getArticles(): Promise<BookArticle[]> {
                   console.warn("Auto-migration article item failed:", mErr);
                 }
               }
-              return localList.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+              const sorted = localList.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+              memoryArticlesCache = sorted;
+              return sorted;
             }
           }
         }
       }
     } catch (err) {
-      console.warn("Firestore fetch failed, falling back to local storage:", err);
+      console.warn("Firestore fetch failed/timeout, falling back to cache:", err);
     }
   }
 
-  // 2. Try LocalStorage
+  // 2. Try In-Memory Cache
+  if (memoryArticlesCache && memoryArticlesCache.length > 0) {
+    return memoryArticlesCache;
+  }
+
+  // 3. Try LocalStorage
   if (typeof window !== "undefined") {
     try {
       // Clean up any legacy mock stores
@@ -83,8 +155,10 @@ export async function getArticles(): Promise<BookArticle[]> {
       const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as BookArticle[];
-        if (parsed) {
-          return parsed.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        if (parsed && parsed.length > 0) {
+          const sorted = parsed.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          memoryArticlesCache = sorted;
+          return sorted;
         }
       }
     } catch (e) {
@@ -92,7 +166,7 @@ export async function getArticles(): Promise<BookArticle[]> {
     }
   }
 
-  // 3. Fallback to initial seed articles (now completely empty)
+  // 4. Fallback to initial seed articles
   return INITIAL_ARTICLES.sort((a, b) => a.order - b.order);
 }
 
@@ -112,11 +186,11 @@ export async function saveArticle(article: BookArticle): Promise<void> {
     }
   }
 
-  // Update LocalStorage
+  // Update LocalStorage and In-Memory Cache
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
-      const currentList = stored ? (JSON.parse(stored) as BookArticle[]) : [];
+      const currentList = stored ? (JSON.parse(stored) as BookArticle[]) : (memoryArticlesCache || []);
       const index = currentList.findIndex((a) => a.id === article.id);
       let updated: BookArticle[];
       if (index >= 0) {
@@ -125,9 +199,17 @@ export async function saveArticle(article: BookArticle): Promise<void> {
       } else {
         updated = [article, ...currentList];
       }
+      memoryArticlesCache = updated;
       localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(updated));
     } catch (e) {
       console.error("Local storage save error:", e);
+    }
+  } else if (memoryArticlesCache) {
+    const index = memoryArticlesCache.findIndex((a) => a.id === article.id);
+    if (index >= 0) {
+      memoryArticlesCache[index] = article;
+    } else {
+      memoryArticlesCache = [article, ...memoryArticlesCache];
     }
   }
 }
@@ -139,7 +221,7 @@ export async function toggleArticleLike(articleId: string, shouldLike: boolean):
   let newLikes = 0;
   const delta = shouldLike ? 1 : -1;
 
-  // 1. Update LocalStorage first for instant responsiveness
+  // 1. Update LocalStorage and In-Memory Cache first for instant responsiveness
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
@@ -150,11 +232,21 @@ export async function toggleArticleLike(articleId: string, shouldLike: boolean):
           const currentLikes = currentList[idx].likes || 0;
           newLikes = Math.max(0, currentLikes + delta);
           currentList[idx].likes = newLikes;
+          memoryArticlesCache = currentList;
           localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(currentList));
         }
       }
     } catch (e) {
       console.error("Local storage like update error:", e);
+    }
+  }
+
+  if (memoryArticlesCache) {
+    const idx = memoryArticlesCache.findIndex((a) => a.id === articleId);
+    if (idx >= 0) {
+      const cur = memoryArticlesCache[idx].likes || 0;
+      newLikes = Math.max(0, cur + delta);
+      memoryArticlesCache[idx].likes = newLikes;
     }
   }
 
@@ -179,7 +271,7 @@ export async function toggleArticleLike(articleId: string, shouldLike: boolean):
 export async function incrementArticleViews(articleId: string): Promise<number> {
   let newViews = 0;
 
-  // 1. Update LocalStorage
+  // 1. Update LocalStorage and In-Memory Cache
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
@@ -190,11 +282,20 @@ export async function incrementArticleViews(articleId: string): Promise<number> 
           const currentViews = currentList[idx].views || 0;
           newViews = currentViews + 1;
           currentList[idx].views = newViews;
+          memoryArticlesCache = currentList;
           localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(currentList));
         }
       }
     } catch (e) {
       console.error("Local storage view update error:", e);
+    }
+  }
+
+  if (memoryArticlesCache) {
+    const idx = memoryArticlesCache.findIndex((a) => a.id === articleId);
+    if (idx >= 0) {
+      newViews = (memoryArticlesCache[idx].views || 0) + 1;
+      memoryArticlesCache[idx].views = newViews;
     }
   }
 
@@ -230,10 +331,13 @@ export async function deleteArticle(id: string): Promise<void> {
       const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
       const currentList = stored ? (JSON.parse(stored) as BookArticle[]) : [];
       const updated = currentList.filter((a) => a.id !== id);
+      memoryArticlesCache = updated;
       localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(updated));
     } catch (e) {
       console.error("Local storage delete error:", e);
     }
+  } else if (memoryArticlesCache) {
+    memoryArticlesCache = memoryArticlesCache.filter((a) => a.id !== id);
   }
 }
 
@@ -245,6 +349,8 @@ export async function saveArticlesOrder(orderedArticles: BookArticle[]): Promise
     ...item,
     order: idx
   }));
+
+  memoryArticlesCache = updated;
 
   if (typeof window !== "undefined") {
     localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(updated));
@@ -267,10 +373,16 @@ export async function saveArticlesOrder(orderedArticles: BookArticle[]): Promise
 export async function getCategories(): Promise<CategoryItem[]> {
   if (isFirebaseConfigured && db) {
     try {
-      const snap = await getDocs(collection(db, "categories"));
+      const snap = await withTimeout(getDocs(collection(db, "categories")), 2500);
       if (!snap.empty) {
         const list: CategoryItem[] = [];
         snap.forEach((d) => list.push({ ...d.data(), id: d.id } as CategoryItem));
+        memoryCategoriesCache = list;
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(list));
+          } catch {}
+        }
         return list;
       } else {
         // If Firestore categories is empty, check if user has local categories or seed with initial
@@ -289,18 +401,27 @@ export async function getCategories(): Promise<CategoryItem[]> {
             await setDoc(doc(db, "categories", cat.id), cat);
           } catch {}
         }
+        memoryCategoriesCache = toSeed;
         return toSeed;
       }
     } catch (err) {
-      console.warn("Firestore categories read error:", err);
+      console.warn("Firestore categories read error/timeout:", err);
     }
+  }
+
+  if (memoryCategoriesCache && memoryCategoriesCache.length > 0) {
+    return memoryCategoriesCache;
   }
 
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_CATEGORIES_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored) as CategoryItem[];
+        if (parsed && parsed.length > 0) {
+          memoryCategoriesCache = parsed;
+          return parsed;
+        }
       }
     } catch (e) {
       console.warn("Categories read error:", e);
@@ -325,6 +446,7 @@ export async function saveCategory(category: CategoryItem): Promise<void> {
     const categories = await getCategories();
     if (!categories.find((c) => c.id === category.id)) {
       const updated = [...categories, category];
+      memoryCategoriesCache = updated;
       localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
     }
   }
@@ -347,6 +469,7 @@ export async function updateCategory(id: string, newName: string): Promise<void>
     const updated = categories.map((c) =>
       c.id === id ? { ...c, name: newName.trim() } : c
     );
+    memoryCategoriesCache = updated;
     localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
   }
 }
@@ -366,6 +489,7 @@ export async function deleteCategory(id: string): Promise<void> {
   if (typeof window !== "undefined") {
     const categories = await getCategories();
     const updated = categories.filter((c) => c.id !== id);
+    memoryCategoriesCache = updated;
     localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
   }
 }
@@ -378,12 +502,18 @@ export async function getMusicTracks(): Promise<MusicTrack[]> {
   if (isFirebaseConfigured && db) {
     try {
       const q = query(collection(db, "music_tracks"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await withTimeout(getDocs(q), 2500);
       if (!querySnapshot.empty) {
         const list: MusicTrack[] = [];
         querySnapshot.forEach((d) => {
           list.push({ ...d.data(), id: d.id } as MusicTrack);
         });
+        memoryTracksCache = list;
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_MUSIC_KEY, JSON.stringify(list));
+          } catch {}
+        }
         return list;
       } else {
         // If Firestore is empty, check if LocalStorage has existing tracks to migrate
@@ -397,14 +527,19 @@ export async function getMusicTracks(): Promise<MusicTrack[]> {
                   await setDoc(doc(db, "music_tracks", t.id), t);
                 } catch {}
               }
+              memoryTracksCache = localTracks;
               return localTracks;
             }
           }
         }
       }
     } catch (err) {
-      console.warn("Firestore music fetch failed, falling back to local storage:", err);
+      console.warn("Firestore music fetch failed/timeout, falling back to local storage:", err);
     }
+  }
+
+  if (memoryTracksCache && memoryTracksCache.length > 0) {
+    return memoryTracksCache;
   }
 
   // 2. Try LocalStorage
@@ -412,7 +547,11 @@ export async function getMusicTracks(): Promise<MusicTrack[]> {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_MUSIC_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored) as MusicTrack[];
+        if (parsed && parsed.length > 0) {
+          memoryTracksCache = parsed;
+          return parsed;
+        }
       }
     } catch (e) {
       console.warn("Music read error:", e);

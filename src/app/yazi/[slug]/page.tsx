@@ -4,7 +4,7 @@ import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookArticle } from "@/lib/types";
-import { getArticles, toggleArticleLike, incrementArticleViews } from "@/lib/posts-service";
+import { getArticles, getCachedArticlesSync, toggleArticleLike, incrementArticleViews } from "@/lib/posts-service";
 import { matchesArticleSlug } from "@/lib/slug-utils";
 import { ReadingProgress } from "@/components/reader/reading-progress";
 import { SiteMusicPlayer } from "@/components/reader/site-music-player";
@@ -44,19 +44,39 @@ export default function ArticlePage({ params }: PageProps) {
   }, []);
 
   useEffect(() => {
-    async function load() {
-      const articles = await getArticles();
-      const found = articles.find((a) => matchesArticleSlug(a, resolvedParams.slug));
-      if (found) {
-        setArticle(found);
-        setLikesCount(found.likes || 0);
-        setViewsCount(found.views || 0);
-        if (typeof window !== "undefined") {
-          const liked = localStorage.getItem(`gunduz_rakisi_liked_${found.id}`);
-          setHasLiked(liked === "true");
-        }
-      }
+    // 1. Instant Cache Hydration: If article exists in cache, display immediately!
+    const cachedList = getCachedArticlesSync();
+    const cachedFound = cachedList.find((a) => matchesArticleSlug(a, resolvedParams.slug));
+    if (cachedFound) {
+      setArticle(cachedFound);
+      setLikesCount(cachedFound.likes || 0);
+      setViewsCount(cachedFound.views || 0);
       setLoading(false);
+      if (typeof window !== "undefined") {
+        const liked = localStorage.getItem(`gunduz_rakisi_liked_${cachedFound.id}`);
+        setHasLiked(liked === "true");
+      }
+    }
+
+    // 2. Background Revalidation
+    async function load() {
+      try {
+        const articles = await getArticles();
+        const found = articles.find((a) => matchesArticleSlug(a, resolvedParams.slug));
+        if (found) {
+          setArticle(found);
+          setLikesCount(found.likes || 0);
+          setViewsCount(found.views || 0);
+          if (typeof window !== "undefined") {
+            const liked = localStorage.getItem(`gunduz_rakisi_liked_${found.id}`);
+            setHasLiked(liked === "true");
+          }
+        }
+      } catch (err) {
+        console.warn("Article load error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [resolvedParams.slug]);

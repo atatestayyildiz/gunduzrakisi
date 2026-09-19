@@ -84,6 +84,7 @@ function useYouTubePlayer(divId: string) {
   const loopRef = useRef<LoopMode>("off");
   const isPlayingRef = useRef(false);
   const pendingActionRef = useRef<"play" | "cue" | null>(null);
+  const pendingAutoPlayRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -117,9 +118,44 @@ function useYouTubePlayer(divId: string) {
     }
   }, []);
 
+  // Mobil Tarayıcılar İçin Autoplay Engeli Çözümü:
+  // Okuyucu sayfaya dokunduğu/kaydırdığı anda (ilk kullanıcı jesti), bekleyen autoplay'i derhal devreye al
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleFirstGesture = () => {
+      if (pendingAutoPlayRef.current && playerRef.current && isReadyRef.current) {
+        try {
+          playerRef.current.playVideo();
+          startProgressPoll();
+          setIsPlaying(true);
+          isPlayingRef.current = true;
+          pendingAutoPlayRef.current = false;
+        } catch {}
+      }
+    };
+
+    const gestureEvents = ["touchstart", "touchend", "pointerdown", "click", "scroll"];
+    gestureEvents.forEach((ev) => {
+      window.addEventListener(ev, handleFirstGesture, { capture: true, passive: true });
+    });
+
+    return () => {
+      gestureEvents.forEach((ev) => {
+        window.removeEventListener(ev, handleFirstGesture, { capture: true });
+      });
+    };
+  }, [startProgressPoll]);
+
   const loadVideo = useCallback((videoId: string, autoplay: boolean) => {
     setCurrentTime(0);
     setDuration(0);
+    if (autoplay) {
+      pendingAutoPlayRef.current = true;
+    } else {
+      pendingAutoPlayRef.current = false;
+    }
+
     if (playerRef.current && isReadyRef.current) {
       try {
         if (autoplay) {
@@ -163,6 +199,8 @@ function useYouTubePlayer(divId: string) {
           iv_load_policy: 3,
           modestbranding: 1,
           rel: 0,
+          playsinline: 1,
+          enablejsapi: 1,
           origin: typeof window !== "undefined" ? window.location.origin : "",
         },
         events: {
@@ -185,6 +223,7 @@ function useYouTubePlayer(divId: string) {
           onStateChange: (e: { data: number }) => {
             // 1 = PLAYING, 2 = PAUSED, 0 = ENDED, 3 = BUFFERING
             if (e.data === 1) {
+              pendingAutoPlayRef.current = false;
               isPlayingRef.current = true;
               setIsPlaying(true);
               startProgressPoll();

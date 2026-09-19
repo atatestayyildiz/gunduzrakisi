@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { BookArticle, CategoryItem } from "@/lib/types";
-import { getArticles, getCategories } from "@/lib/posts-service";
+import { getArticles, getCategories, getCachedArticlesSync, getCachedCategoriesSync } from "@/lib/posts-service";
 import { BookshelfHeader } from "@/components/reader/bookshelf-header";
 import { Bookshelf } from "@/components/reader/bookshelf";
 
@@ -15,14 +15,29 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function initData() {
-      const [allArticles, allCategories] = await Promise.all([
-        getArticles(),
-        getCategories(),
-      ]);
-      setArticles(allArticles);
-      setCategories(allCategories);
+    // 1. Instant Cache Hydration: If cached articles exist in local storage or memory, render immediately!
+    const cachedArts = getCachedArticlesSync();
+    const cachedCats = getCachedCategoriesSync();
+    if (cachedArts.length > 0) {
+      setArticles(cachedArts);
+      setCategories(cachedCats);
       setLoading(false);
+    }
+
+    // 2. Background Revalidation (Stale-While-Revalidate)
+    async function initData() {
+      try {
+        const [allArticles, allCategories] = await Promise.all([
+          getArticles(),
+          getCategories(),
+        ]);
+        setArticles(allArticles);
+        setCategories(allCategories);
+      } catch (err) {
+        console.warn("Background fetch failed:", err);
+      } finally {
+        setLoading(false);
+      }
     }
     initData();
   }, []);

@@ -113,50 +113,7 @@ export default function WriterPage() {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
 
-  // Dynamic typewriter platen paper-feed tracking:
-  // Sayfa ilk açıldığında veya metin platene ulaşmadığında sayfa tamamen sabittir (scroll kilitli).
-  // Metin platene ulaştığı andan itibaren kağıt satır satır yukarı beslenir.
-  const [paperFeedScroll, setPaperFeedScroll] = useState(0);
 
-  useEffect(() => {
-    if (activeTab !== "write") return;
-
-    if (mainRef.current && editorRef.current) {
-      const editor = editorRef.current;
-      const main = mainRef.current;
-
-      if (!content.trim()) {
-        setPaperFeedScroll(0);
-        main.scrollTop = 0;
-        return;
-      }
-
-      const mainRect = main.getBoundingClientRect();
-      const editorRect = editor.getBoundingClientRect();
-
-      // Platen çizgisi: silindirin hemen üst sınırı (175px)
-      const platenYInMain = window.innerHeight - 175 - mainRect.top;
-
-      // Yazılan metnin en alt noktasının main içerisindeki mutlak konumu:
-      const textBottomAbsY =
-        editorRect.top - mainRect.top + main.scrollTop + editorRect.height;
-
-      if (textBottomAbsY > platenYInMain) {
-        const requiredFeed = Math.ceil(textBottomAbsY - platenYInMain);
-        setPaperFeedScroll(requiredFeed);
-      } else {
-        setPaperFeedScroll(0);
-        main.scrollTop = 0;
-      }
-    }
-  }, [content, activeTab]);
-
-  // DOM paddingBottom ve overflow-y-auto render edildikten HEMEN SONRA scroll'u senkronize et
-  useEffect(() => {
-    if (activeTab === "write" && paperFeedScroll > 0 && mainRef.current) {
-      mainRef.current.scrollTop = paperFeedScroll;
-    }
-  }, [paperFeedScroll, activeTab]);
 
   useEffect(() => {
     const auth = localStorage.getItem("gunduz_rakisi_author_auth");
@@ -864,23 +821,10 @@ export default function WriterPage() {
         </div>
       )}
 
-      {/* Main Sanctuary Area (Daktilodan çıkan kağıt gibi scroll eden orta blok; görünür scrollbar yok, büyü bozulmaz!) */}
+      {/* Main Sanctuary Area */}
       <main
         ref={mainRef}
-        onScroll={(e) => {
-          if (activeTab === "write" && paperFeedScroll > 0) {
-            if (e.currentTarget.scrollTop > paperFeedScroll) {
-              e.currentTarget.scrollTop = paperFeedScroll;
-            }
-          }
-        }}
-        className={`relative z-10 flex-1 no-scrollbar px-4 sm:px-6 pt-8 sm:pt-12 ${
-          activeTab === "write"
-            ? paperFeedScroll === 0
-              ? "overflow-y-hidden pb-0"
-              : "overflow-y-auto pb-0"
-            : "overflow-y-auto pb-24"
-        }`}
+        className="relative z-10 flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pt-8 sm:pt-12 pb-44 sm:pb-56"
       >
         <div className="max-w-4xl mx-auto w-full">
           {activeTab === "write" ? (
@@ -895,10 +839,9 @@ export default function WriterPage() {
               </p>
             </div>
 
-            {/* Zen Paper Sheet (Tek parça, dikişsiz ve altı daktiloya inen sonsuz kağıt) */}
+            {/* Zen Paper Sheet */}
             <div
-              className="relative px-6 pt-6 sm:px-12 sm:pt-12 rounded-t-3xl rounded-b-none bg-[#faf6f0]/95 border-x-2 border-t-2 border-b-0 border-[#d9c7b2] shadow-2xl backdrop-blur-xs min-h-[calc(100vh-170px)]"
-              style={{ paddingBottom: `${paperFeedScroll}px` }}
+              className="relative px-6 pt-6 sm:px-12 sm:pt-12 pb-32 sm:pb-44 rounded-3xl bg-[#faf6f0]/95 border-2 border-[#d9c7b2] shadow-2xl backdrop-blur-xs min-h-[calc(100vh-200px)]"
             >
               {/* Rich Text Editor Formatting Toolbar */}
               <EditorToolbar

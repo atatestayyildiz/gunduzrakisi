@@ -96,62 +96,43 @@ export function EditorToolbar({
       editorRef.current.focus();
     }
     document.execCommand(command, false, value);
-
-    // Break out caret so continuing typing doesn't stay formatted
-    const sel = window.getSelection();
-    if (
-      sel &&
-      (command === "bold" || command === "italic" || command === "underline" || command === "strikeThrough") &&
-      sel.rangeCount > 0
-    ) {
-      sel.collapseToEnd();
-      const node = sel.focusNode;
-      const parent =
-        node?.nodeType === Node.TEXT_NODE
-          ? node.parentElement
-          : (node as Element | null);
-
-      if (parent && /^(B|STRONG|I|EM|U|S|DEL|STRIKE|SPAN)$/.test(parent.tagName)) {
-        const cleanNode = document.createTextNode("\u200B");
-        if (parent.nextSibling) {
-          parent.parentNode?.insertBefore(cleanNode, parent.nextSibling);
-        } else {
-          parent.parentNode?.appendChild(cleanNode);
-        }
-
-        const newRange = document.createRange();
-        newRange.setStart(cleanNode, 1);
-        newRange.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(newRange);
-      }
-    }
-
     syncContent();
   };
 
   // Apply color to selected text
   const applyInlineColor = (colorCSS: string) => {
     restoreSelection();
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
 
-    const range = sel.getRangeAt(0);
-    const span = document.createElement("span");
-    span.style.color = colorCSS;
-
     try {
-      const fragment = range.extractContents();
-      span.appendChild(fragment);
-      range.insertNode(span);
-
-      sel.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.selectNodeContents(span);
-      sel.addRange(newRange);
+      document.execCommand("styleWithCSS", false, "true");
+      const ok = document.execCommand("foreColor", false, colorCSS);
+      if (!ok) {
+        throw new Error("foreColor command not supported");
+      }
       syncContent();
-    } catch (err) {
-      console.error("Renk uygulama hatası:", err);
+    } catch {
+      const range = sel.getRangeAt(0);
+      const span = document.createElement("span");
+      span.style.color = colorCSS;
+
+      try {
+        const fragment = range.extractContents();
+        span.appendChild(fragment);
+        range.insertNode(span);
+
+        sel.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        sel.addRange(newRange);
+        syncContent();
+      } catch (err) {
+        console.error("Renk uygulama hatası:", err);
+      }
     }
     setShowColorPicker(false);
   };

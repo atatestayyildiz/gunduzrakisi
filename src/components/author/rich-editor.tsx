@@ -185,14 +185,14 @@ export function RichEditor({
           [&>blockquote]:my-6 [&>blockquote]:pl-5 [&>blockquote]:border-l-4 [&>blockquote]:border-amber-800/60 [&>blockquote]:italic [&>blockquote]:text-xl [&>blockquote]:text-[#462810] [&>blockquote]:bg-[#eee4d6]/40 [&>blockquote]:py-3 [&>blockquote]:rounded-r-xl
           [&>ul]:my-4 [&>ul]:space-y-1.5 [&>ul]:pl-6 [&>ul]:list-disc [&>ul]:marker:text-amber-800
           [&>hr]:my-8 [&>hr]:border-0 [&>hr]:h-px [&>hr]:bg-gradient-to-r [&>hr]:from-transparent [&>hr]:via-amber-900/40 [&>hr]:to-transparent
-          [&_strong]:font-bold [&_strong]:text-[#231407]
-          [&_b]:font-bold [&_b]:text-[#231407]
-          [&_em]:italic [&_em]:text-[#381e0b]
-          [&_i]:italic [&_i]:text-[#381e0b]
-          [&_u]:underline [&_u]:decoration-amber-900/60
-          [&_s]:line-through [&_s]:opacity-75
-          [&_del]:line-through [&_del]:opacity-75
-          [&_strike]:line-through [&_strike]:opacity-75
+          [&_strong]:font-bold
+          [&_b]:font-bold
+          [&_em]:italic
+          [&_i]:italic
+          [&_u]:underline [&_u]:decoration-current/60
+          [&_s]:line-through
+          [&_del]:line-through
+          [&_strike]:line-through
           [&_a]:text-amber-800 [&_a]:underline [&_a]:decoration-amber-700/60 [&_a]:font-medium [&_a:hover]:text-amber-950 [&_a:hover]:decoration-amber-950
         `}
       />

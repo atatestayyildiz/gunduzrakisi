@@ -189,6 +189,11 @@ export function RichEditor({
           [&_b]:font-bold [&_b]:text-[#231407]
           [&_em]:italic [&_em]:text-[#381e0b]
           [&_i]:italic [&_i]:text-[#381e0b]
+          [&_u]:underline [&_u]:decoration-amber-900/60
+          [&_s]:line-through [&_s]:opacity-75
+          [&_del]:line-through [&_del]:opacity-75
+          [&_strike]:line-through [&_strike]:opacity-75
+          [&_a]:text-amber-800 [&_a]:underline [&_a]:decoration-amber-700/60 [&_a]:font-medium [&_a:hover]:text-amber-950 [&_a:hover]:decoration-amber-950
         `}
       />
     </div>

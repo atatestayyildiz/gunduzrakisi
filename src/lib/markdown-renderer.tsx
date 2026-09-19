@@ -46,6 +46,11 @@ export function MarkdownRenderer({
         [&_b]:font-bold [&_b]:text-[#231407]
         [&_em]:italic [&_em]:text-[#381e0b]
         [&_i]:italic [&_i]:text-[#381e0b]
+        [&_u]:underline [&_u]:decoration-amber-900/60
+        [&_s]:line-through [&_s]:opacity-75
+        [&_del]:line-through [&_del]:opacity-75
+        [&_strike]:line-through [&_strike]:opacity-75
+        [&_a]:text-amber-800 [&_a]:underline [&_a]:decoration-amber-700/60 [&_a]:font-medium [&_a:hover]:text-amber-950 [&_a:hover]:decoration-amber-950
         [&_img]:rounded-2xl [&_img]:max-w-full [&_img]:max-h-[600px] [&_img]:mx-auto [&_img]:shadow-md [&_img]:border [&_img]:border-[#d8c7b4]
         [&_figure]:my-8 [&_figure]:text-center
         [&_figcaption]:mt-2.5 [&_figcaption]:text-xs [&_figcaption]:font-serif [&_figcaption]:italic [&_figcaption]:text-[#785b44]

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { CategoryItem } from "@/lib/types";
 import { ChevronDown, Check, BookMarked, Feather, Search, X } from "lucide-react";
+import { LeverSwitch } from "@/components/ui/lever-switch";
 
 interface BookshelfHeaderProps {
   categories: CategoryItem[];
@@ -12,6 +13,8 @@ interface BookshelfHeaderProps {
   totalBooks: number;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
+  searchInContent?: boolean;
+  onSearchInContentChange?: (val: boolean) => void;
 }
 
 export const BookshelfHeader = ({
@@ -21,6 +24,8 @@ export const BookshelfHeader = ({
   totalBooks,
   searchQuery = "",
   onSearchChange,
+  searchInContent = false,
+  onSearchInContentChange,
 }: BookshelfHeaderProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthorAuthenticated, setIsAuthorAuthenticated] = useState(false);
@@ -56,28 +61,54 @@ export const BookshelfHeader = ({
     <header className="relative w-full max-w-7xl mx-auto pt-4 sm:pt-6 px-3 sm:px-6">
       {/* Heavy Solid Oak Bookcase Crown Molding (Üst Kapak / Taç - Dropdown taşması için overflow-visible) */}
       <div className="relative rounded-t-3xl border-x-4 border-t-4 border-[#241004] shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
-        {/* Top Carved Molding Edge (Genişletilmiş masif meşe taç + Ahşap yakma yaldızlı imza + Arama Kutusu) */}
-        <div className="oak-shelf-top h-11 sm:h-12 w-full rounded-t-[22px] border-b border-[#ffd9a3]/20 flex items-center justify-between px-4 sm:px-8">
-          {/* Sol: Antika Arama Kutusu */}
-          <div className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#ffd9a3]/60 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              placeholder="Kitaplıkta ara..."
-              className="w-36 sm:w-64 pl-8 pr-7 py-1 rounded-lg bg-black/45 border border-[#ffd9a3]/25 focus:border-[#ffd9a3]/60 focus:bg-black/65 text-xs font-serif text-[#faebd7] placeholder:text-[#e0c4a4]/40 focus:outline-hidden transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.7)]"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange?.("")}
-                className="absolute right-2 text-[#ffd9a3]/50 hover:text-amber-200 cursor-pointer transition-colors p-0.5"
-                title="Aramayı Temizle"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+        {/* Top Carved Molding Edge (Genişletilmiş masif meşe taç + Ahşap yakma yaldızlı imza + Arama Kutusu & Şalter) */}
+        <div className="oak-shelf-top h-11 sm:h-12 w-full rounded-t-[22px] border-b border-[#ffd9a3]/20 flex items-center justify-between px-3 sm:px-8">
+          {/* Sol: Antika Arama Kutusu & İçerik Arama Lever Switch */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="relative flex items-center">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#ffd9a3]/60 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                placeholder={
+                  searchInContent
+                    ? "Yazı İçeriğinde Arama Yap..."
+                    : "Kitap başlığında ara..."
+                }
+                className="w-36 sm:w-64 pl-8 pr-7 py-1 rounded-lg bg-black/45 border border-[#ffd9a3]/25 focus:border-[#ffd9a3]/60 focus:bg-black/65 text-xs font-serif text-[#faebd7] placeholder:text-[#e0c4a4]/40 focus:outline-hidden transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.7)]"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange?.("")}
+                  className="absolute right-2 text-[#ffd9a3]/50 hover:text-amber-200 cursor-pointer transition-colors p-0.5"
+                  title="Aramayı Temizle"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Lever Switch: Başlık vs İçerik */}
+            <div
+              className="flex items-center gap-1.5 cursor-pointer"
+              title={
+                searchInContent
+                  ? "Yazı İçeriğinde Arama Açık (Kapatmak için tıklayın)"
+                  : "Sadece Kitap Başlıklarında Arama (İçerik araması için şalteri açın)"
+              }
+              onClick={() => onSearchInContentChange?.(!searchInContent)}
+            >
+              <LeverSwitch
+                checked={searchInContent}
+                onCheckedChange={(val) => onSearchInContentChange?.(val)}
+                className="scale-[0.78] origin-left sm:scale-[0.82]"
+              />
+              <span className="text-[10px] font-serif tracking-wide text-[#edd2b4]/80 select-none hidden md:inline">
+                {searchInContent ? "İçerikte Ara" : "Başlıkta Ara"}
+              </span>
+            </div>
           </div>
 
           {/* Sağ: moonworks.com.tr hediyesidir */}

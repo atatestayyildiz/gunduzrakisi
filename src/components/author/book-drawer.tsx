@@ -8,6 +8,8 @@ import { MusicTrackSelect } from "./music-track-select";
 import { CategorySelect } from "./category-select";
 import { LeverSwitch } from "@/components/ui/lever-switch";
 import { ScheduleConfirmModal } from "./schedule-confirm-modal";
+import { AntiqueDatePicker } from "@/components/ui/antique-date-picker";
+import { AntiqueTimePicker } from "@/components/ui/antique-time-picker";
 import {
   X,
   Sliders,
@@ -147,7 +149,6 @@ export const BookDrawer = ({
   });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-  const dateInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -658,7 +659,7 @@ export const BookDrawer = ({
           </div>
 
           {/* Yazı Tarihi */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2 relative z-10">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2 relative z-30">
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-amber-800" />
@@ -682,64 +683,18 @@ export const BookDrawer = ({
               )}
             </div>
 
-            {/* Antika Tasarımlı Tarih Seçim Alanı */}
-            <div className="relative flex items-center w-full rounded-xl border border-[#c5ab8d] bg-white/95 focus-within:ring-2 focus-within:ring-amber-800/30 focus-within:border-amber-800 shadow-xs transition-all overflow-hidden">
-              <div className="pl-3 pr-2 text-amber-800/70 shrink-0">
-                <Calendar className="w-4 h-4" />
-              </div>
-              <input
-                type="text"
-                placeholder="Örn: 18 Eylül 2026"
-                value={date}
-                onChange={(e) => onDateChange?.(e.target.value)}
-                className="flex-1 py-2.5 bg-transparent border-none text-xs font-serif text-[#3b200b] placeholder:text-amber-900/35 focus:outline-hidden"
-              />
-
-              {/* Gizli native tarih seçici (tarayıcı g/tarih bozulmalarını önlemek için arka planda tetiklenir) */}
-              <input
-                ref={dateInputRef}
-                type="date"
-                className="sr-only"
-                tabIndex={-1}
-                aria-hidden="true"
-                onChange={(e) => {
-                  if (e.target.value && onDateChange) {
-                    const [y, m, d] = e.target.value.split("-").map(Number);
-                    const dObj = new Date(y, m - 1, d);
-                    onDateChange(
-                      dObj.toLocaleDateString("tr-TR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                      })
-                    );
-                  }
-                }}
-              />
-
-              {/* Takvim Açma Butonu */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (dateInputRef.current) {
-                    try {
-                      dateInputRef.current.showPicker();
-                    } catch {
-                      dateInputRef.current.click();
-                    }
-                  }
-                }}
-                className="px-2.5 py-1.5 mr-1.5 rounded-lg bg-amber-900/10 hover:bg-amber-900/18 text-amber-900 text-xs font-serif font-medium transition-colors cursor-pointer flex items-center gap-1.5"
-                title="Takvimden Tarih Seç"
-              >
-                <span>Takvim</span>
-                <Calendar className="w-3.5 h-3.5 opacity-80" />
-              </button>
-            </div>
+            {/* Özel Antika Tarih Seçici */}
+            <AntiqueDatePicker
+              value={date}
+              onChange={(formattedStr) => onDateChange?.(formattedStr)}
+              placeholder="Örn: 19 Eylül 2026"
+              formatAsTurkish={true}
+              align="left"
+            />
           </div>
 
           {/* İleri Tarihli Paylaşım (Zamanlayıcı & Lever Switch) */}
-          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-3 relative z-10">
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-3 relative z-20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-amber-800 shrink-0" />
@@ -781,16 +736,17 @@ export const BookDrawer = ({
                     <label className="text-[10px] font-serif font-medium text-[#4a2b13] block mb-1">
                       Yayın Günü
                     </label>
-                    <input
-                      type="date"
+                    <AntiqueDatePicker
                       value={scheduleDate}
-                      onChange={(e) => {
-                        setScheduleDate(e.target.value);
-                        if (e.target.value && scheduleTime) {
-                          onScheduledAtChange?.(`${e.target.value}T${scheduleTime}:00`);
+                      onChange={(formatted, isoStr) => {
+                        const newDate = isoStr || formatted;
+                        setScheduleDate(newDate);
+                        if (newDate && scheduleTime) {
+                          onScheduledAtChange?.(`${newDate}T${scheduleTime}:00`);
                         }
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-[#c5ab8d] bg-white text-xs font-serif text-[#3b200b] focus:outline-hidden focus:border-amber-800"
+                      formatAsTurkish={false}
+                      align="left"
                     />
                   </div>
                   {/* Saat */}
@@ -798,16 +754,15 @@ export const BookDrawer = ({
                     <label className="text-[10px] font-serif font-medium text-[#4a2b13] block mb-1">
                       Yayın Saati
                     </label>
-                    <input
-                      type="time"
+                    <AntiqueTimePicker
                       value={scheduleTime}
-                      onChange={(e) => {
-                        setScheduleTime(e.target.value);
-                        if (scheduleDate && e.target.value) {
-                          onScheduledAtChange?.(`${scheduleDate}T${e.target.value}:00`);
+                      onChange={(timeStr) => {
+                        setScheduleTime(timeStr);
+                        if (scheduleDate && timeStr) {
+                          onScheduledAtChange?.(`${scheduleDate}T${timeStr}:00`);
                         }
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-[#c5ab8d] bg-white text-xs font-serif text-[#3b200b] focus:outline-hidden focus:border-amber-800"
+                      align="right"
                     />
                   </div>
                 </div>

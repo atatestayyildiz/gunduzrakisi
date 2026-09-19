@@ -11,6 +11,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchInContent, setSearchInContent] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export default function HomePage() {
     return new Set(topLikedArticles.map((a) => a.id));
   }, [topLikedArticles]);
 
-  // 3. Kategori ve Dinamik Arama Filtrelemesi
+  // 3. Kategori ve Dinamik Arama Filtrelemesi (Başlık odaklı veya Switch Açıkken Tüm İçerik)
   const filteredArticles = useMemo(() => {
     let list = publishedArticles;
 
@@ -64,11 +65,16 @@ export default function HomePage() {
       list = list.filter((art) => art.category === selectedCategory);
     }
 
-    // Dinamik Arama (Başlık, içerik veya özet içinde kelime / kelime grubu)
+    // Dinamik Arama
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLocaleLowerCase("tr-TR");
       list = list.filter((art) => {
         const title = (art.title || "").toLocaleLowerCase("tr-TR");
+        if (!searchInContent) {
+          // Varsayılan: Sadece Kitap İsimleri / Yazı Başlıkları
+          return title.includes(q);
+        }
+        // Şalter Açık: Yazı İçeriği + Özet + Başlık
         const content = (art.content || "").toLocaleLowerCase("tr-TR");
         const excerpt = (art.excerpt || "").toLocaleLowerCase("tr-TR");
         return title.includes(q) || content.includes(q) || excerpt.includes(q);
@@ -76,7 +82,7 @@ export default function HomePage() {
     }
 
     return list;
-  }, [publishedArticles, topLikedArticles, selectedCategory, searchQuery]);
+  }, [publishedArticles, topLikedArticles, selectedCategory, searchQuery, searchInContent]);
 
   return (
     <div className="min-h-screen plaster-wall flex flex-col justify-between selection:bg-amber-800/20">
@@ -90,6 +96,8 @@ export default function HomePage() {
             totalBooks={filteredArticles.length}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            searchInContent={searchInContent}
+            onSearchInContentChange={setSearchInContent}
           />
         </div>
 

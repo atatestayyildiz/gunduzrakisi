@@ -614,79 +614,117 @@ export default function WriterPage() {
       {/* Pastoral Sunlight & Floating Dust Motes */}
       <PastoralBackground />
 
-      {/* Top Bar / Navigation (Sabit Başlık) */}
-      <header className="shrink-0 z-30 bg-[#f7f3eb]/85 backdrop-blur-md border-b border-[#ddcfbd] px-4 sm:px-8 py-3.5 shadow-xs">
-        <div className="max-w-6xl mx-auto relative flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      {/* Top Bar / Navigation (Derli Toplu, Modern & Antika Yerleşke) */}
+      <header className="shrink-0 z-30 bg-[#f7f3eb]/92 backdrop-blur-md border-b border-[#d8cbb9] shadow-[0_2px_8px_rgba(0,0,0,0.04)] px-3 sm:px-6 py-2.5">
+        <div className="w-full flex items-center justify-between gap-3 lg:pr-[336px]">
+          {/* SOL: Navigasyon, Kimlik & Hızlı Yazar Araçları */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <Link
               href="/"
-              className="flex items-center gap-2 text-xs font-serif font-semibold text-[#503119] hover:text-black transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-serif font-medium text-[#4a2e17] hover:text-[#1a0e05] bg-[#ece3d4]/70 hover:bg-[#e4d8c5] border border-[#d2c0aa]/80 transition-all shadow-2xs group"
+              title="Kitaplığa Dön"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Kitaplığa Dön</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-800 transition-transform group-hover:-translate-x-0.5" />
+              <span className="hidden md:inline">Kitaplığa Dön</span>
             </Link>
-            <span className="text-neutral-400">|</span>
-            <div className="flex items-center gap-1.5 font-serif font-bold text-amber-950 text-sm">
-              <Feather className="w-4 h-4 text-amber-700" />
-              <span>Mert Kip | Yazar Odası</span>
+
+            <div className="h-4 w-[1px] bg-[#d2c0aa]" />
+
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-950/5">
+              <Feather className="w-3.5 h-3.5 text-amber-800 shrink-0" />
+              <span className="font-serif font-bold text-amber-950 text-xs sm:text-sm tracking-tight whitespace-nowrap">
+                Mert Kip <span className="font-normal text-amber-900/60 hidden sm:inline">• Yazar Odası</span>
+              </span>
             </div>
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-serif text-amber-900/80 hover:text-amber-950 bg-[#e8ded0]/80 hover:bg-[#ded1c0] border border-[#d2c0aa] transition-all cursor-pointer ml-1"
-              title="Yazar Giriş Şifresini Değiştir"
-            >
-              <Key className="w-3.5 h-3.5 text-amber-800" />
-              <span className="hidden sm:inline text-[11px] font-medium">Şifre Değiştir</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-serif text-amber-900/70 hover:text-amber-950 hover:bg-[#e8ded0] transition-colors cursor-pointer"
-              title="Yazar Odasını Kilitle & Çıkış Yap"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">Kilitle</span>
-            </button>
+
+            {/* Şifre Değiştir & Kilitle / Çıkış butonları (Kompakt ve şık) */}
+            <div className="flex items-center gap-1 bg-[#ece3d4]/60 border border-[#d8c8b4] rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(true)}
+                className="p-1.5 sm:px-2 sm:py-1 rounded-md text-xs font-serif text-amber-900/80 hover:text-amber-950 hover:bg-white/80 transition-all cursor-pointer flex items-center gap-1"
+                title="Yazar Giriş Şifresini Değiştir"
+              >
+                <Key className="w-3.5 h-3.5 text-amber-800" />
+                <span className="hidden xl:inline text-[11px]">Şifre</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="p-1.5 sm:px-2 sm:py-1 rounded-md text-xs font-serif text-amber-900/80 hover:text-red-900 hover:bg-red-50/80 transition-all cursor-pointer flex items-center gap-1"
+                title="Yazar Odasını Kilitle & Çıkış Yap"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline text-[11px]">Kilitle</span>
+              </button>
+            </div>
           </div>
 
-          {/* Tab Switcher — Kesin Ortalanmış (Sabit Konum) */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 rounded-xl bg-[#e8ded0] border border-[#d2c0aa]">
+          {/* ORTA: Sekmeler (Daktilo & Yazı, Taslaklar, Raflar) */}
+          <nav className="flex items-center gap-1 p-1 rounded-xl bg-[#ece3d4] border border-[#d2c0aa] shadow-inner shrink-0">
             <button
+              type="button"
               onClick={() => setActiveTab("write")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-serif font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-serif transition-all cursor-pointer ${
                 activeTab === "write"
-                  ? "bg-[#3e220e] text-white shadow-xs font-semibold"
-                  : "text-[#5e4129] hover:text-black"
+                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm font-semibold"
+                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
               }`}
             >
               <Edit className="w-3.5 h-3.5" />
-              <span>Daktilo & Yazı</span>
+              <span className="hidden sm:inline">Daktilo & Yazı</span>
+              <span className="sm:hidden">Yazı</span>
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("drafts")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-serif font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-serif transition-all cursor-pointer ${
                 activeTab === "drafts"
-                  ? "bg-[#3e220e] text-white shadow-xs font-semibold"
-                  : "text-[#5e4129] hover:text-black"
+                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm font-semibold"
+                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Taslaklar ({drafts.length})</span>
+              <span>Taslaklar</span>
+              {drafts.length > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "drafts"
+                      ? "bg-amber-200 text-amber-950"
+                      : "bg-black/10 text-[#4a2e17]"
+                  }`}
+                >
+                  {drafts.length}
+                </span>
+              )}
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("shelves")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-serif font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-serif transition-all cursor-pointer ${
                 activeTab === "shelves"
-                  ? "bg-[#3e220e] text-white shadow-xs font-semibold"
-                  : "text-[#5e4129] hover:text-black"
+                  ? "bg-[#3e220e] text-[#faeedd] shadow-sm font-semibold"
+                  : "text-[#5e4129] hover:text-black hover:bg-black/5"
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Raf Düzenleme ({published.length})</span>
+              <span>Raflar</span>
+              {published.length > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "shelves"
+                      ? "bg-amber-200 text-amber-950"
+                      : "bg-black/10 text-[#4a2e17]"
+                  }`}
+                >
+                  {published.length}
+                </span>
+              )}
             </button>
-          </div>
+          </nav>
 
-          {/* Action Buttons in Top Bar */}
-          <div className="flex items-center gap-2">
+          {/* SAĞ: Aksiyon Butonları (Taslak Kaydet & Ciltle/Rafa Koy) */}
+          <div className="flex items-center gap-2 shrink-0">
             {activeTab === "write" && (
               <>
                 <button
@@ -694,7 +732,7 @@ export default function WriterPage() {
                   onClick={handleSaveAsDraft}
                   disabled={isSaving}
                   title="Yazınızı taslak olarak saklayın, daha sonra devam edin"
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#e8ded0] hover:bg-[#d8c8b4] text-[#4a2e17] font-serif font-semibold text-xs transition-all border border-[#d2c0aa] cursor-pointer disabled:opacity-50"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ece3d4] hover:bg-[#e0d3c0] text-[#4a2e17] font-serif font-semibold text-xs transition-all border border-[#d2c0aa] shadow-2xs cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-3.5 h-3.5 text-amber-800" />
                   <span>Taslak Kaydet</span>
@@ -703,7 +741,7 @@ export default function WriterPage() {
                 <button
                   type="button"
                   onClick={() => setIsDrawerOpen(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#4a2810] hover:bg-[#613617] text-[#fcebdc] font-serif font-semibold text-xs transition-all shadow-md border border-[#c48d5d]/40 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#4a2810] to-[#3a1c09] hover:from-[#5c3214] hover:to-[#4a240c] text-[#fcebdc] font-serif font-semibold text-xs transition-all shadow-[0_2px_8px_rgba(74,40,16,0.25)] border border-[#c48d5d]/50 cursor-pointer active:scale-[0.98]"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>Ciltle & Rafa Koy</span>

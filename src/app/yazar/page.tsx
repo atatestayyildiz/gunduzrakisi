@@ -653,7 +653,7 @@ export default function WriterPage() {
         />
 
         {/* ═══════════════ MOBİL ÜST BAR GÖRÜNÜMÜ (< md) ═══════════════ */}
-        <div className="flex md:hidden items-center justify-between w-full">
+        <div className="flex md:hidden items-center justify-between w-full pr-24">
           {/* Sol: Hamburger Butonu + Profil Avatarı + Yazar İsmi */}
           <div className="flex items-center gap-2">
             <button
@@ -682,7 +682,7 @@ export default function WriterPage() {
             </span>
           </div>
 
-          {/* Orta: Aktif Bölüm Göstergesi Rozeti */}
+          {/* Orta / Sağ: Aktif Bölüm Göstergesi Rozeti (Rafa Koy mobilde kaldırıldı, kulakçıkla çakışmaz) */}
           <div className="flex items-center">
             <span className="px-2.5 py-1 rounded-lg bg-[#3e220e] text-[#faeedd] text-[11px] font-serif font-semibold shadow-xs">
               {activeTab === "write"
@@ -691,20 +691,6 @@ export default function WriterPage() {
                 ? `Taslaklar (${drafts.length})`
                 : `Raflar (${published.length})`}
             </span>
-          </div>
-
-          {/* Sağ: Mobil Aksiyon */}
-          <div className="flex items-center gap-1.5">
-            {activeTab === "write" && (
-              <button
-                type="button"
-                onClick={() => setIsDrawerOpen(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-[#4a2810] to-[#3a1c09] text-[#fcebdc] font-serif font-semibold text-xs border border-[#c48d5d]/50 shadow-xs active:scale-95 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Rafa Koy</span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -863,189 +849,6 @@ export default function WriterPage() {
             )}
           </div>
         </div>
-
-        {/* ═══════════════ MOBİL SOL ÇEKMECE (HAMBURGER MENÜ) ═══════════════ */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden flex">
-            {/* Arka plan karartması */}
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-
-            {/* Çekmece Paneli */}
-            <div
-              className="relative z-10 w-[280px] max-w-[85vw] h-full flex flex-col justify-between p-5 border-r-2 border-[#8c5828]/50 shadow-2xl overflow-y-auto"
-              style={{
-                backgroundColor: "#f7f3eb",
-                backgroundImage: "radial-gradient(ellipse at 50% 10%, rgba(212,175,55,0.06) 0%, transparent 60%)",
-              }}
-            >
-              <div>
-                {/* Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-[#d8c8b4]">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#8c5828] relative group cursor-pointer shadow-xs"
-                      onClick={() => profileFileInputRef.current?.click()}
-                      title="Profil Resmini Değiştir"
-                    >
-                      <img
-                        src={profileImage || "/textures/mert_kip.jpg"}
-                        alt="Mert Kip"
-                        className="w-full h-full object-cover object-top"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <Camera className="w-3.5 h-3.5 text-amber-200" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="font-serif font-bold text-amber-950 text-sm">Mert Kip</h3>
-                      <p className="font-serif text-[11px] text-amber-900/60 italic">Yazar Odası</p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="p-1.5 rounded-lg bg-black/5 hover:bg-black/10 text-amber-950 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Sekmeler / Bölümler */}
-                <div className="py-4 space-y-1.5">
-                  <span className="text-[10px] font-serif uppercase tracking-widest text-amber-900/50 font-bold px-2 block mb-2">
-                    Bölümler
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("write");
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-serif text-xs font-semibold transition-all cursor-pointer ${
-                      activeTab === "write"
-                        ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
-                        : "text-[#5e4129] hover:bg-black/5"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Edit className="w-4 h-4" />
-                      <span>Daktilo & Yazı</span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("drafts");
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-serif text-xs font-semibold transition-all cursor-pointer ${
-                      activeTab === "drafts"
-                        ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
-                        : "text-[#5e4129] hover:bg-black/5"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <FileText className="w-4 h-4" />
-                      <span>Taslaklar</span>
-                    </div>
-                    {drafts.length > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-200 text-amber-950">
-                        {drafts.length}
-                      </span>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("shelves");
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-serif text-xs font-semibold transition-all cursor-pointer ${
-                      activeTab === "shelves"
-                        ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
-                        : "text-[#5e4129] hover:bg-black/5"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <LayoutGrid className="w-4 h-4" />
-                      <span>Raflar</span>
-                    </div>
-                    {published.length > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-200 text-amber-950">
-                        {published.length}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                {/* Hızlı Eylemler */}
-                <div className="pt-2 pb-4 border-t border-[#d8c8b4] space-y-1.5">
-                  <span className="text-[10px] font-serif uppercase tracking-widest text-amber-900/50 font-bold px-2 block mb-2">
-                    Eylemler
-                  </span>
-
-                  {activeTab === "write" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleSaveAsDraft();
-                        setMobileMenuOpen(false);
-                      }}
-                      disabled={isSaving}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif font-semibold text-[#4a2e17] bg-[#ece3d4] hover:bg-[#e0d3c0] border border-[#d2c0aa] transition-colors cursor-pointer"
-                    >
-                      <Save className="w-4 h-4 text-amber-800" />
-                      <span>Taslak Olarak Sakla</span>
-                    </button>
-                  )}
-
-                  <Link
-                    href="/"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif font-medium text-[#4a2e17] hover:bg-black/5 transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4 text-amber-800" />
-                    <span>Kitaplığa Geri Dön</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Alt Güvenlik ve Çıkış */}
-              <div className="pt-4 border-t border-[#d8c8b4] space-y-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setShowPasswordModal(true);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif text-amber-900 hover:bg-black/5 transition-colors cursor-pointer"
-                >
-                  <Key className="w-4 h-4 text-amber-800" />
-                  <span>Şifreyi Değiştir</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif text-red-900 hover:bg-red-50 transition-colors cursor-pointer"
-                >
-                  <LogOut className="w-4 h-4 text-red-800" />
-                  <span>Odayı Kilitle & Çık</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Notice Banner */}
@@ -1462,6 +1265,206 @@ export default function WriterPage() {
           setTimeout(() => setNotice(null), 4000);
         }}
       />
+
+      {/* ═══════════════ MOBİL SOL ÇEKMECE (HAMBURGER MENÜ) ═══════════════ */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden flex">
+          {/* Arka plan karartması */}
+          <div
+            className="fixed inset-0 bg-black/65 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Çekmece Paneli */}
+          <div
+            className="relative z-10 w-[290px] max-w-[85vw] h-full flex flex-col justify-between p-5 border-r-2 border-[#8c5828]/50 shadow-[0_0_50px_rgba(0,0,0,0.85)] overflow-y-auto animate-in slide-in-from-left duration-300"
+            style={{
+              backgroundColor: "#f7f3eb",
+              backgroundImage: "radial-gradient(ellipse at 50% 10%, rgba(212,175,55,0.06) 0%, transparent 60%)",
+            }}
+          >
+            <div>
+              {/* Header: Profil, İsim ve Kapat Çarpısı */}
+              <div className="flex items-center justify-between pb-4 border-b border-[#d8c8b4]">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#8c5828] relative group cursor-pointer shadow-xs bg-[#241004]"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      profileFileInputRef.current?.click();
+                    }}
+                    title="Profil Resmini Değiştir"
+                  >
+                    <img
+                      src={profileImage || "/textures/mert_kip.jpg"}
+                      alt="Mert Kip"
+                      className="w-full h-full object-cover object-top"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <Camera className="w-3.5 h-3.5 text-amber-200" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-amber-950 text-sm">Mert Kip</h3>
+                    <p className="font-serif text-[11px] text-amber-900/60 italic">Yazar Odası</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 rounded-lg bg-black/5 hover:bg-black/10 text-amber-950 cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Sekmeler / Bölümler */}
+              <div className="py-4 space-y-1.5">
+                <span className="text-[10px] font-serif uppercase tracking-widest text-amber-900/50 font-bold px-2 block mb-2">
+                  Bölümler
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("write");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-serif text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === "write"
+                      ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
+                      : "text-[#5e4129] hover:bg-black/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Edit className="w-4 h-4" />
+                    <span>Daktilo & Yazı</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("drafts");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-serif text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === "drafts"
+                      ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
+                      : "text-[#5e4129] hover:bg-black/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-4 h-4" />
+                    <span>Taslaklar</span>
+                  </div>
+                  {drafts.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-200 text-amber-950">
+                      {drafts.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("shelves");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-serif text-xs font-semibold transition-all cursor-pointer ${
+                    activeTab === "shelves"
+                      ? "bg-[#3e220e] text-[#faeedd] shadow-sm"
+                      : "text-[#5e4129] hover:bg-black/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LayoutGrid className="w-4 h-4" />
+                    <span>Raflar</span>
+                  </div>
+                  {published.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-200 text-amber-950">
+                      {published.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Hızlı Eylemler (Mobilde Ciltle & Rafa Koy butonu burada yer alır) */}
+              <div className="pt-2 pb-4 border-t border-[#d8c8b4] space-y-2">
+                <span className="text-[10px] font-serif uppercase tracking-widest text-amber-900/50 font-bold px-2 block mb-1">
+                  Eylemler
+                </span>
+
+                {activeTab === "write" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setIsDrawerOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-serif font-bold text-[#fcebdc] bg-gradient-to-r from-[#5a3014] to-[#3a1c09] hover:from-[#6b3a1a] hover:to-[#4a240c] border border-amber-600/50 shadow-md transition-all cursor-pointer active:scale-98"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>Ciltle & Rafa Koy</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSaveAsDraft();
+                        setMobileMenuOpen(false);
+                      }}
+                      disabled={isSaving}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif font-semibold text-[#4a2e17] bg-[#ece3d4] hover:bg-[#e0d3c0] border border-[#d2c0aa] transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4 text-amber-800" />
+                      <span>Taslak Olarak Sakla</span>
+                    </button>
+                  </>
+                )}
+
+                <Link
+                  href="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif font-medium text-[#4a2e17] hover:bg-black/5 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 text-amber-800" />
+                  <span>Kitaplığa Geri Dön</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Alt Güvenlik ve Çıkış */}
+            <div className="pt-4 border-t border-[#d8c8b4] space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowPasswordModal(true);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif text-amber-900 hover:bg-black/5 transition-colors cursor-pointer"
+              >
+                <Key className="w-4 h-4 text-amber-800" />
+                <span>Şifreyi Değiştir</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-serif text-red-900 hover:bg-red-50 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 text-red-800" />
+                <span>Odayı Kilitle & Çık</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

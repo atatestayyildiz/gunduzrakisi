@@ -177,24 +177,25 @@ export default function ArticlePage({ params }: PageProps) {
             <span className="font-serif">Kitaplığa Dön</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 pr-22 sm:pr-0">
             {isAuthorAuthenticated && (
               <Link
                 href="/yazar"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3e220e] hover:bg-[#522e14] text-amber-200 hover:text-white text-xs font-medium transition-colors cursor-pointer shadow-xs border border-amber-500/30"
+                className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg bg-[#3e220e] hover:bg-[#522e14] text-amber-200 hover:text-white text-xs font-medium transition-colors cursor-pointer shadow-xs border border-amber-500/30"
                 title="Yazar Odasına Dön"
               >
-                <Feather className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-serif">Yazar Odası</span>
+                <Feather className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="font-serif hidden sm:inline">Yazar Odası</span>
+                <span className="font-serif sm:hidden text-[11px]">Yazar</span>
               </Link>
             )}
 
             <button
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e7ded1] hover:bg-[#ded1c0] text-xs font-medium text-[#4a2e17] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#e7ded1] hover:bg-[#ded1c0] text-xs font-medium text-[#4a2e17] transition-colors cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Share2 className="w-3.5 h-3.5" />}
-              <span>{copied ? "Kopyalandı!" : "Paylaş"}</span>
+              <span className="text-[11px] sm:text-xs">{copied ? "Kopyalandı!" : "Paylaş"}</span>
             </button>
           </div>
         </div>

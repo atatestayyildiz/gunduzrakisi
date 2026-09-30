@@ -13,6 +13,8 @@ export interface BookArticle {
   variant: "simple" | "stripe";
   textured: boolean;
   coverImage?: string;
+  coverImageTransform?: CoverImageTransform; // Kapak görselinin konum/yakınlaştırma ayarı
+  shelfId?: string; // Kitabın durduğu raf (ShelfItem.id)
   musicTitle?: string;
   musicArtist?: string;
   musicUrl?: string;   // Direkt .mp3 / ses dosyası URL'si
@@ -43,3 +45,15 @@ export interface MusicTrack {
   createdAt?: string;
 }
 
+
+export interface CoverImageTransform {
+  x: number;    // Yatay kaydırma, görsel alanı genişliğinin yüzdesi (-100..100)
+  y: number;    // Dikey kaydırma, görsel alanı yüksekliğinin yüzdesi (-100..100)
+  zoom: number; // Ölçek (0.5..3), 1 = alanı tam kaplar
+}
+
+export interface ShelfItem {
+  id: string;
+  name: string;
+  order: number;
+}

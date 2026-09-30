@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { Book } from "@/components/ui/book";
-import { CategoryItem } from "@/lib/types";
+import { CategoryItem, CoverImageTransform, ShelfItem } from "@/lib/types";
+import { CoverImageEditor, DEFAULT_COVER_TRANSFORM } from "./cover-image-editor";
 import { convertToWebP } from "@/lib/image-utils";
 import { MusicTrackSelect } from "./music-track-select";
 import { CategorySelect } from "./category-select";
@@ -30,6 +31,9 @@ import {
   Upload,
   ImageIcon,
   Loader2,
+  Move,
+  Library,
+  Plus,
 } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
 
@@ -58,6 +62,12 @@ interface BookDrawerProps {
   onTexturedChange: (val: boolean) => void;
   coverImage?: string;
   onCoverImageChange: (img: string) => void;
+  coverImageTransform?: CoverImageTransform;
+  onCoverImageTransformChange: (t: CoverImageTransform | undefined) => void;
+  shelves: ShelfItem[];
+  shelfId: string;
+  onShelfChange: (id: string) => void;
+  onAddShelf: (name: string) => Promise<void> | void;
   musicTitle: string;
   onMusicTitleChange: (v: string) => void;
   musicArtist: string;
@@ -110,6 +120,12 @@ export const BookDrawer = ({
   onTexturedChange,
   coverImage,
   onCoverImageChange,
+  coverImageTransform,
+  onCoverImageTransformChange,
+  shelves,
+  shelfId,
+  onShelfChange,
+  onAddShelf,
   musicTitle,
   onMusicTitleChange,
   musicArtist,
@@ -151,6 +167,9 @@ export const BookDrawer = ({
     return "12:00";
   });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isCoverEditorOpen, setIsCoverEditorOpen] = useState(false);
+  const [showNewShelfInput, setShowNewShelfInput] = useState(false);
+  const [newShelfName, setNewShelfName] = useState("");
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,6 +180,8 @@ export const BookDrawer = ({
       setCompressionInfo("Görsel optimize ediliyor...");
       const res = await convertToWebP(file, 800, 1200, 0.82);
       onCoverImageChange(res.dataUrl);
+      onCoverImageTransformChange(undefined);
+      setIsCoverEditorOpen(true);
       setCompressionInfo(`Boyut: ~${res.sizeKB} KB (Orijinal: ${res.originalSizeKB} KB)`);
     } catch (err) {
       console.error("Görsel dönüştürme hatası:", err);
@@ -170,6 +191,13 @@ export const BookDrawer = ({
       // Reset input so same file can be re-selected if deleted
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleAddShelf = async () => {
+    if (!newShelfName.trim()) return;
+    await onAddShelf(newShelfName.trim());
+    setNewShelfName("");
+    setShowNewShelfInput(false);
   };
 
   const handleAddCat = (e: React.FormEvent) => {
@@ -287,6 +315,7 @@ export const BookDrawer = ({
                 textColor={textColor}
                 textured={textured}
                 coverImage={coverImage}
+                coverImageTransform={coverImageTransform}
                 width={160}
               />
             </div>
@@ -446,6 +475,11 @@ export const BookDrawer = ({
                     src={coverImage}
                     alt="Kapak Önizleme"
                     className="w-full h-full object-cover"
+                    style={{
+                      transform: coverImageTransform
+                        ? `translate(${coverImageTransform.x}%, ${coverImageTransform.y}%) scale(${coverImageTransform.zoom})`
+                        : undefined,
+                    }}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -457,16 +491,27 @@ export const BookDrawer = ({
                       {compressionInfo}
                     </p>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onCoverImageChange("");
-                      setCompressionInfo(null);
-                    }}
-                    className="mt-1 text-[11px] font-serif text-rose-800 underline hover:text-rose-950 cursor-pointer"
-                  >
-                    Görseli Kaldır
-                  </button>
+                  <div className="mt-1 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsCoverEditorOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-serif font-semibold text-amber-900 underline hover:text-amber-950 cursor-pointer"
+                    >
+                      <Move className="w-3 h-3" />
+                      Konumlandır
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onCoverImageChange("");
+                        onCoverImageTransformChange(undefined);
+                        setCompressionInfo(null);
+                      }}
+                      className="text-[11px] font-serif text-rose-800 underline hover:text-rose-950 cursor-pointer"
+                    >
+                      Görseli Kaldır
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -501,11 +546,79 @@ export const BookDrawer = ({
                 value={coverImage && !coverImage.startsWith("data:") ? coverImage : ""}
                 onChange={(e) => {
                   onCoverImageChange(e.target.value);
+                  onCoverImageTransformChange(undefined);
                   setCompressionInfo(null);
                 }}
                 className="w-full px-2.5 py-1.5 rounded-lg bg-white/70 border border-[#d8c7b4] text-[11px] font-serif text-[#3b200b] placeholder-[#9a7d65] focus:outline-hidden focus:ring-1 focus:ring-amber-800"
               />
             </div>
+          </div>
+
+          {/* Raf Seçimi */}
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
+                <Library className="w-4 h-4 text-amber-800" />
+                <span>Hangi Rafa Konsun?</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowNewShelfInput(!showNewShelfInput)}
+                className="text-xs font-serif text-amber-800 underline hover:text-amber-950 cursor-pointer"
+              >
+                {showNewShelfInput ? "Vazgeç" : "+ Yeni Raf"}
+              </button>
+            </div>
+
+            {showNewShelfInput && (
+              <div className="flex gap-2 p-2 rounded-xl bg-amber-900/5 border border-[#d8c7b4]">
+                <input
+                  type="text"
+                  placeholder="Raf adı"
+                  value={newShelfName}
+                  onChange={(e) => setNewShelfName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddShelf();
+                    }
+                  }}
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-[#d8c7b4] text-xs focus:outline-hidden focus:ring-1 focus:ring-amber-800"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleAddShelf}
+                  className="px-3 py-1.5 rounded-lg bg-[#4a2810] hover:bg-[#5e3415] text-amber-100 text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  Ekle
+                </button>
+              </div>
+            )}
+
+            {shelves.length === 0 ? (
+              <p className="text-[11px] font-serif italic text-[#7a593e]">
+                Henüz raf yok. &quot;+ Yeni Raf&quot; ile ilk rafınızı oluşturun.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {shelves.map((sh) => (
+                  <button
+                    key={sh.id}
+                    type="button"
+                    onClick={() => onShelfChange(sh.id)}
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-serif transition-all cursor-pointer ${
+                      shelfId === sh.id
+                        ? "bg-[#3e220e] text-white border-[#3e220e] shadow-sm font-semibold"
+                        : "bg-white/70 hover:bg-white text-[#4a2b13] border-[#d8c7b4]"
+                    }`}
+                  >
+                    {sh.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Kategori Seçimi & Yönetimi */}
@@ -517,7 +630,7 @@ export const BookDrawer = ({
             <div className="flex items-center justify-between">
               <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
                 <FolderPlus className="w-4 h-4 text-amber-800" />
-                <span>Raf / Kategori</span>
+                <span>Kategori</span>
               </label>
 
               <div className="flex items-center gap-1.5 text-xs font-serif">
@@ -876,6 +989,26 @@ export const BookDrawer = ({
           )}
         </div>
       </aside>
+
+      {/* Kapak Görseli Konumlandırma Editörü */}
+      <CoverImageEditor
+        isOpen={isCoverEditorOpen}
+        onClose={() => setIsCoverEditorOpen(false)}
+        coverImage={coverImage || ""}
+        transform={coverImageTransform}
+        onTransformChange={(t) =>
+          onCoverImageTransformChange(
+            t.x === DEFAULT_COVER_TRANSFORM.x && t.y === DEFAULT_COVER_TRANSFORM.y && t.zoom === DEFAULT_COVER_TRANSFORM.zoom
+              ? undefined
+              : t
+          )
+        }
+        title={title}
+        variant={variant}
+        coverColor={coverColor}
+        textColor={textColor}
+        textured={textured}
+      />
 
       {/* İleri Tarihli Paylaşım Onay Penceresi */}
       <ScheduleConfirmModal

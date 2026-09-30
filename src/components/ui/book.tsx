@@ -4,6 +4,7 @@ import React from "react";
 import { useResponsive } from "@/components/ui/use-responsive";
 import { TopLikedBadge } from "@/components/ui/top-liked-badge";
 import clsx from "clsx";
+import type { CoverImageTransform } from "@/lib/types";
 
 const DefaultIllustration = (
   <svg fill="none" height="56" viewBox="0 0 36 56" width="36" xmlns="http://www.w3.org/2000/svg">
@@ -44,6 +45,7 @@ export interface BookProps {
   illustration?: React.ReactNode;
   textured?: boolean;
   coverImage?: string;
+  coverImageTransform?: CoverImageTransform;
   className?: string;
   scale?: number;
   heightRatio?: number;
@@ -59,10 +61,32 @@ export interface BookCoverProps {
   illustration?: React.ReactNode;
   textured?: boolean;
   coverImage?: string;
+  coverImageTransform?: CoverImageTransform;
   isTopLiked?: boolean;
   className?: string;
   width?: number;
 }
+
+/** Kapak görselini konum/yakınlaştırma ayarıyla çizen katman */
+export const CoverImageLayer = ({
+  src,
+  transform,
+}: {
+  src: string;
+  transform?: CoverImageTransform;
+}) => {
+  const t = transform || { x: 0, y: 0, zoom: 1 };
+  return (
+    <div
+      className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+      style={{
+        backgroundImage: `url('${src}')`,
+        transform: `translate(${t.x}%, ${t.y}%) scale(${t.zoom})`,
+        transformOrigin: "center",
+      }}
+    />
+  );
+};
 
 export const BookCover = ({
   title,
@@ -72,6 +96,7 @@ export const BookCover = ({
   illustration,
   textured = false,
   coverImage,
+  coverImageTransform,
   isTopLiked = false,
   className,
   width,
@@ -101,10 +126,8 @@ export const BookCover = ({
       {isTopLiked && <TopLikedBadge />}
       {coverImage && variant === "simple" ? (
         /* Yekpare (Simple): Tüm kapakta yüklenen görsel yer alır */
-        <div
-          className="w-full h-full relative overflow-hidden bg-cover bg-center"
-          style={{ backgroundImage: `url('${coverImage}')` }}
-        >
+        <div className="w-full h-full relative overflow-hidden">
+          <CoverImageLayer src={coverImage} transform={coverImageTransform} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex flex-col justify-end p-[7%] pl-[14%]">
             <span
               className="leading-[1.2em] tracking-[-.02em] font-semibold text-balance drop-shadow-md text-[11cqw]"
@@ -122,10 +145,8 @@ export const BookCover = ({
         /* Çift Renkli (Stripe): Üst yarısı yüklenen görsel, alt yarısı seçilen cilt rengi */
         <>
           {/* Üst Yarısı: Görsel */}
-          <div
-            className="w-full flex-1 relative overflow-hidden bg-cover bg-center"
-            style={{ backgroundImage: `url('${coverImage}')` }}
-          >
+          <div className="w-full flex-1 relative overflow-hidden">
+            <CoverImageLayer src={coverImage} transform={coverImageTransform} />
             <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-b from-transparent to-black/30 pointer-events-none" />
             <div className="absolute h-full w-[8.2%] mix-blend-overlay" style={{ background: "var(--ds-book-bind)" }} />
           </div>
@@ -261,6 +282,7 @@ export const Book = ({
   illustration,
   textured = false,
   coverImage,
+  coverImageTransform,
   className,
   scale = 1,
   heightRatio = 1,
@@ -329,6 +351,7 @@ export const Book = ({
             illustration={illustration}
             textured={textured}
             coverImage={coverImage}
+            coverImageTransform={coverImageTransform}
             isTopLiked={isTopLiked}
             width={_width}
           />

@@ -6,6 +6,7 @@ import { CategoryItem } from "@/lib/types";
 import { ChevronDown, Check, BookMarked, Feather, Search, X } from "lucide-react";
 import { LeverSwitch } from "@/components/ui/lever-switch";
 import { getAuthorProfileImage } from "@/lib/posts-service";
+import { useAuthorName } from "@/lib/use-author-name";
 
 interface BookshelfHeaderProps {
   categories: CategoryItem[];
@@ -280,6 +281,7 @@ export const BookshelfHeader = ({
 };
 
 function MertPortrait() {
+  const authorName = useAuthorName();
   const [imgUrl, setImgUrl] = useState<string>("/textures/mert_kip.jpg");
 
   useEffect(() => {
@@ -295,7 +297,7 @@ function MertPortrait() {
       {/* Masif Ahşap & Yaldızlı Çerçeve */}
       <div
         className="relative p-1.5 sm:p-2 rounded-full border-2 border-[#1a0c04] shadow-[0_10px_25px_rgba(0,0,0,0.85),inset_0_2px_4px_rgba(255,255,255,0.18)] transition-transform duration-300 group-hover:scale-102"
-        title="Mert Kip"
+        title={authorName}
         style={{
           backgroundColor: "#2c1407",
           backgroundImage: `linear-gradient(145deg, #3d1c0b 0%, #1a0a03 100%), url('/textures/oak_wood.jpg')`,
@@ -307,7 +309,7 @@ function MertPortrait() {
           <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-inner bg-[#140803] relative">
             <img
               src={imgUrl}
-              alt="Mert Kip"
+              alt={authorName}
               className="w-full h-full object-cover object-top filter contrast-[1.04] brightness-[0.98] group-hover:scale-105 transition-transform duration-500"
             />
           </div>
@@ -324,7 +326,7 @@ function MertPortrait() {
         {/* Sol Vida Başı / Perçin */}
         <span className="w-1 h-1 rounded-full bg-[#301c06] opacity-85 shadow-[inset_0_0.5px_0.5px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.5)]" />
         <span className="font-serif font-bold text-[10px] sm:text-[11px] tracking-widest text-[#241004] uppercase drop-shadow-[0_0.5px_0px_rgba(255,255,255,0.35)]">
-          Mert Kip
+          {authorName}
         </span>
         {/* Sağ Vida Başı / Perçin */}
         <span className="w-1 h-1 rounded-full bg-[#301c06] opacity-85 shadow-[inset_0_0.5px_0.5px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.5)]" />

@@ -1,25 +1,54 @@
 "use client";
 
 import React from "react";
-import { BookArticle } from "@/lib/types";
+import { BookArticle, ShelfItem } from "@/lib/types";
 import { BookItem } from "./book-item";
 import { assignShelfBookSizes } from "@/lib/book-size-utils";
+import { useAuthorName } from "@/lib/use-author-name";
 
-interface BookshelfProps {
-  articles: BookArticle[];
-  topLikedIds?: Set<string>;
-  searchActive?: boolean;
+export interface ShelfRow {
+  shelf: ShelfItem;
+  books: BookArticle[];
 }
 
-export const Bookshelf = ({ articles, topLikedIds, searchActive = false }: BookshelfProps) => {
-  // Her zaman en az 2 tam meşe raf gösterilir; kitap sayısı arttıkça 5'erli yeni raflar eklenir
-  const SHELF_CAPACITY = 5;
-  const MIN_SHELVES = 2;
-  const totalShelfCount = Math.max(MIN_SHELVES, Math.ceil(articles.length / SHELF_CAPACITY));
-  const shelves: BookArticle[][] = [];
+interface BookshelfProps {
+  rows: ShelfRow[];
+  topLikedIds?: Set<string>;
+  searchActive?: boolean;
+  filterActive?: boolean;
+  totalPublished: number;
+}
 
-  for (let i = 0; i < totalShelfCount; i++) {
-    shelves.push(articles.slice(i * SHELF_CAPACITY, (i + 1) * SHELF_CAPACITY));
+// Bir fiziksel rafa sığan kitap sayısı; fazlası aynı isimli raf altında yeni sıraya geçer
+const SHELF_CAPACITY = 5;
+
+export const Bookshelf = ({
+  rows,
+  topLikedIds,
+  searchActive = false,
+  filterActive = false,
+  totalPublished,
+}: BookshelfProps) => {
+  const authorName = useAuthorName();
+  // Filtre/arama açıkken yalnız eşleşen kitabı olan raflar gösterilir
+  const visibleRows = filterActive ? rows.filter((r) => r.books.length > 0) : rows;
+  const noMatch = filterActive && visibleRows.length === 0;
+
+  // Her isimli raf, 5'erli fiziksel sıralara bölünür (en az 1 sıra)
+  const shelves: { name: string; books: BookArticle[]; key: string }[] = [];
+  if (noMatch || visibleRows.length === 0) {
+    shelves.push({ name: rows[0]?.shelf.name || "Raf", books: [], key: "empty" });
+  } else {
+    visibleRows.forEach(({ shelf, books }) => {
+      const chunks = Math.max(1, Math.ceil(books.length / SHELF_CAPACITY));
+      for (let c = 0; c < chunks; c++) {
+        shelves.push({
+          name: shelf.name,
+          books: books.slice(c * SHELF_CAPACITY, (c + 1) * SHELF_CAPACITY),
+          key: `${shelf.id}_${c}`,
+        });
+      }
+    });
   }
 
   return (
@@ -43,8 +72,8 @@ export const Bookshelf = ({ articles, topLikedIds, searchActive = false }: Books
           </div>
 
           {/* Shelves Stack */}
-          {shelves.map((shelfBooks, shelfIndex) => (
-            <div key={shelfIndex} className="group/shelf relative flex flex-col pt-3 sm:pt-4 hover:z-40">
+          {shelves.map(({ name: shelfName, books: shelfBooks, key: shelfKey }, shelfIndex) => (
+            <div key={shelfKey} className="group/shelf relative flex flex-col pt-3 sm:pt-4 hover:z-40">
               {/* Natural Deep Soffit Shadow under upper beam (Normal gölgeli kısım) */}
               <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/75 via-black/30 to-transparent pointer-events-none z-10" />
 
@@ -89,7 +118,7 @@ export const Bookshelf = ({ articles, topLikedIds, searchActive = false }: Books
                 ) : (
                   /* Boş Raf Durumu: Ekran boş kalmaz, ahşap raf atmosferi ve yönlendirme korunur */
                   <div className="col-span-full h-full flex flex-col items-center justify-center text-center px-4 py-4">
-                    {shelfIndex === 0 && searchActive ? (
+                    {shelfIndex === 0 && noMatch && searchActive ? (
                       <div className="flex flex-col items-center justify-center pointer-events-auto">
                         <p className="font-serif text-sm sm:text-base text-[#faebd7]/95 font-medium">
                           Aramanızla eşleşen kitap bulunamadı.
@@ -98,20 +127,20 @@ export const Bookshelf = ({ articles, topLikedIds, searchActive = false }: Books
                           Farklı bir arama terimi deneyebilir veya arama kutusunu temizleyebilirsiniz.
                         </p>
                       </div>
-                    ) : shelfIndex === 0 && articles.length === 0 ? (
+                    ) : shelfIndex === 0 && totalPublished === 0 ? (
                       <div className="flex flex-col items-center justify-center pointer-events-auto">
                         <div className="flex items-center gap-2 mb-2 opacity-80">
                           <div className="w-8 h-px bg-amber-500/50" />
                           <span className="font-serif italic text-xs text-amber-200/90 tracking-wide">
-                            1. Raf Henüz Boş
+                            {shelfName} Henüz Boş
                           </span>
                           <div className="w-8 h-px bg-amber-500/50" />
                         </div>
                         <p className="font-serif text-xs sm:text-sm text-[#faebd7]/90 max-w-md drop-shadow-xs">
-                          Mert Kip&apos;in edebi yazıları ve denemeleri yakında bu raflarda yerini alacak.
+                          {authorName}&apos;in edebi yazıları ve denemeleri yakında bu raflarda yerini alacak.
                         </p>
                       </div>
-                    ) : shelfIndex === 0 && articles.length > 0 ? (
+                    ) : shelfIndex === 0 && noMatch ? (
                       <div className="flex flex-col items-center justify-center">
                         <p className="font-serif text-xs sm:text-sm text-[#faebd7]/90">
                           Bu kategoride henüz bir deneme bulunmuyor.
@@ -123,7 +152,7 @@ export const Bookshelf = ({ articles, topLikedIds, searchActive = false }: Books
                     ) : (
                       <div className="flex items-center justify-center pointer-events-none opacity-40">
                         <span className="font-serif italic text-xs text-amber-200/60 tracking-wider">
-                          {shelfIndex + 1}. Raf • Yeni denemeler için hazır bekliyor
+                          {shelfName} • Yeni denemeler için hazır bekliyor
                         </span>
                       </div>
                     )}
@@ -141,8 +170,8 @@ export const Bookshelf = ({ articles, topLikedIds, searchActive = false }: Books
                   {/* Brass Plaque with Carved Shelf Number */}
                   <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-md border border-amber-600/30 shadow-[inset_0_1px_2px_rgba(0,0,0,0.8)]">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-xs" />
-                    <span className="text-[10px] sm:text-[11px] font-serif tracking-widest text-[#f5cca0] uppercase font-bold">
-                      RAF #{shelfIndex + 1}
+                    <span className="text-[10px] sm:text-[11px] font-serif tracking-widest text-[#f5cca0] uppercase font-bold truncate max-w-[55vw] sm:max-w-md">
+                      {shelfName}
                     </span>
                   </div>
                 </div>

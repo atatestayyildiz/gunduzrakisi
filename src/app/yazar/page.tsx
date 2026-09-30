@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookArticle, CategoryItem, MusicTrack } from "@/lib/types";
+import { BookArticle, CategoryItem, MusicTrack, ShelfItem, CoverImageTransform } from "@/lib/types";
 import {
   getArticles,
   saveArticle,
@@ -19,7 +19,14 @@ import {
   getAuthorPasscode,
   getAuthorProfileImage,
   saveAuthorProfileImage,
+  getShelves,
+  saveShelves,
+  getAuthorName,
+  saveAuthorName,
+  DEFAULT_AUTHOR_NAME,
 } from "@/lib/posts-service";
+import { assignArticlesToShelves } from "@/lib/shelf-utils";
+import { AuthorNameModal } from "@/components/author/author-name-modal";
 import { cleanPastedText, calculateSips, getCleanExcerpt } from "@/lib/text-cleaner";
 import { slugify } from "@/lib/slug-utils";
 import { PastoralBackground } from "@/components/author/pastoral-bg";
@@ -66,6 +73,9 @@ export default function WriterPage() {
   const [articles, setArticles] = useState<BookArticle[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [musicTracks, setMusicTracks] = useState<MusicTrack[]>([]);
+  const [shelves, setShelves] = useState<ShelfItem[]>([]);
+  const [authorName, setAuthorName] = useState(DEFAULT_AUTHOR_NAME);
+  const [showNameModal, setShowNameModal] = useState(false);
   const [isAddMusicOpen, setIsAddMusicOpen] = useState(false);
   const [musicRefreshTrigger, setMusicRefreshTrigger] = useState(0);
 
@@ -84,6 +94,8 @@ export default function WriterPage() {
   const [variant, setVariant] = useState<"simple" | "stripe">("stripe");
   const [textured, setTextured] = useState(true);
   const [coverImage, setCoverImage] = useState("");
+  const [coverImageTransform, setCoverImageTransform] = useState<CoverImageTransform | undefined>(undefined);
+  const [shelfId, setShelfId] = useState("");
   const [musicTitle, setMusicTitle] = useState("");
   const [musicArtist, setMusicArtist] = useState("");
   const [musicUrl, setMusicUrl] = useState("");
@@ -176,13 +188,32 @@ export default function WriterPage() {
 
   useEffect(() => {
     async function loadData() {
-      const [art, cat, mus, pImg] = await Promise.all([
+      const [art, cat, mus, pImg, aName] = await Promise.all([
         getArticles(),
         getCategories(),
         getMusicTracks(),
         getAuthorProfileImage(),
+        getAuthorName(),
       ]);
-      setArticles(art);
+      setAuthorName(aName);
+
+      // Raflar: yoksa eski düzene uygun oluşturulur; rafı olmayan kitaplar kalıcı olarak yerleştirilir
+      const publishedList = art.filter((a) => !a.isDraft);
+      const shelfList = await getShelves(publishedList.length);
+      setShelves(shelfList);
+      const hasUnassigned = publishedList.some((a) => !shelfList.some((s) => s.id === a.shelfId));
+      let finalArticles = art;
+      if (hasUnassigned && shelfList.length > 0) {
+        const layout = assignArticlesToShelves(publishedList, shelfList);
+        const placed: BookArticle[] = [];
+        shelfList.forEach((s) =>
+          (layout.get(s.id) || []).forEach((a) => placed.push({ ...a, shelfId: s.id }))
+        );
+        finalArticles = [...placed, ...art.filter((a) => a.isDraft)];
+        await saveArticlesOrder(finalArticles);
+      }
+      setArticles(finalArticles);
+      setShelfId((prev) => prev || shelfList[shelfList.length - 1]?.id || "");
       setCategories(cat);
       setMusicTracks(mus);
       if (pImg) {
@@ -263,6 +294,42 @@ export default function WriterPage() {
     });
   };
 
+  // Raf ekle (kalıcı)
+  const handleAddShelf = async (name: string) => {
+    const newShelf: ShelfItem = { id: `shelf_${Date.now()}`, name, order: shelves.length };
+    const updated = [...shelves, newShelf];
+    await saveShelves(updated);
+    setShelves(updated);
+    setShelfId(newShelf.id);
+    setNotice(`"${name}" rafı eklendi.`);
+    setTimeout(() => setNotice(null), 3000);
+  };
+
+  // Raf adını değiştir (kalıcı)
+  const handleRenameShelf = async (id: string, name: string) => {
+    const updated = shelves.map((s) => (s.id === id ? { ...s, name } : s));
+    await saveShelves(updated);
+    setShelves(updated);
+  };
+
+  const handleSaveAuthorName = async (name: string) => {
+    await saveAuthorName(name);
+    setAuthorName(name);
+    setNotice("Yazar adı güncellendi.");
+    setTimeout(() => setNotice(null), 3000);
+  };
+
+  const defaultShelfId = () => shelves[shelves.length - 1]?.id || "";
+  const resolvedShelfId = shelves.some((s) => s.id === shelfId) ? shelfId : defaultShelfId();
+
+  // Kitabın rafındaki son sıra (raf değiştiyse veya yeni kitapsa en sona eklenir)
+  const nextOrderFor = (targetShelfId: string) => {
+    const existing = editingId ? articles.find((a) => a.id === editingId) : undefined;
+    if (existing && existing.shelfId === targetShelfId && !existing.isDraft) return existing.order ?? 0;
+    const maxOrder = articles.reduce((m, a) => Math.max(m, a.order ?? 0), -1);
+    return maxOrder + 1;
+  };
+
   const drafts = articles.filter((a) => a.isDraft);
   const published = articles.filter((a) => !a.isDraft);
 
@@ -278,6 +345,8 @@ export default function WriterPage() {
     setVariant(art.variant);
     setTextured(art.textured);
     setCoverImage(art.coverImage || "");
+    setCoverImageTransform(art.coverImageTransform);
+    setShelfId(art.shelfId && shelves.some((s) => s.id === art.shelfId) ? art.shelfId : defaultShelfId());
     setMusicTitle(art.musicTitle || "");
     setMusicArtist(art.musicArtist || "");
     setMusicUrl(art.musicUrl || "");
@@ -339,6 +408,8 @@ export default function WriterPage() {
     setContent("");
     setDate("");
     setCoverImage("");
+    setCoverImageTransform(undefined);
+    setShelfId(defaultShelfId());
     setMusicTitle("");
     setMusicArtist("");
     setMusicUrl("");
@@ -384,12 +455,14 @@ export default function WriterPage() {
       variant,
       textured,
       coverImage: coverImage || undefined,
+      coverImageTransform: coverImage ? coverImageTransform : undefined,
+      shelfId: resolvedShelfId || undefined,
       heightRatio: editingId ? (articles.find((a) => a.id === editingId)?.heightRatio ?? randomHeightRatio()) : randomHeightRatio(),
       musicTitle: musicTitle || undefined,
       musicArtist: musicArtist || undefined,
       musicUrl: musicUrl || undefined,
       musicCover: musicCover || undefined,
-      order: editingId ? (articles.find((a) => a.id === editingId)?.order || 0) : articles.length,
+      order: nextOrderFor(resolvedShelfId),
       isDraft: true,
       fontFamily,
       fontSize,
@@ -455,12 +528,14 @@ export default function WriterPage() {
       variant,
       textured,
       coverImage: coverImage || undefined,
+      coverImageTransform: coverImage ? coverImageTransform : undefined,
+      shelfId: resolvedShelfId || undefined,
       heightRatio: editingId ? (articles.find((a) => a.id === editingId)?.heightRatio ?? randomHeightRatio()) : randomHeightRatio(),
       musicTitle: musicTitle || undefined,
       musicArtist: musicArtist || undefined,
       musicUrl: musicUrl || undefined,
       musicCover: musicCover || undefined,
-      order: editingId ? (articles.find((a) => a.id === editingId)?.order || 0) : published.length,
+      order: nextOrderFor(resolvedShelfId),
       isDraft: false,
       fontFamily,
       fontSize,
@@ -629,14 +704,19 @@ export default function WriterPage() {
             >
               <img
                 src={profileImage || "/textures/mert_kip.jpg"}
-                alt="Mert Kip"
+                alt={authorName}
                 className="w-full h-full object-cover object-top"
               />
             </div>
 
-            <span className="font-serif font-bold text-[#321d0d] text-xs truncate max-w-[85px]">
-              Mert Kip
-            </span>
+            <button
+              type="button"
+              onClick={() => setShowNameModal(true)}
+              className="font-serif font-bold text-[#321d0d] text-xs truncate max-w-[85px] cursor-pointer hover:underline"
+              title="Yazar Adını Değiştir"
+            >
+              {authorName}
+            </button>
           </div>
 
           {/* Orta / Sağ: Aktif Bölüm Göstergesi Rozeti (Rafa Koy mobilde kaldırıldı, kulakçıkla çakışmaz) */}
@@ -740,7 +820,7 @@ export default function WriterPage() {
               <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-[#8c5828] shadow-xs relative bg-[#241004] transition-transform group-hover/avatar:scale-105">
                 <img
                   src={profileImage || "/textures/mert_kip.jpg"}
-                  alt="Mert Kip"
+                  alt={authorName}
                   className="w-full h-full object-cover object-top filter contrast-[1.03]"
                 />
                 <div className="absolute inset-0 bg-black/45 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
@@ -749,12 +829,18 @@ export default function WriterPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-950/5">
+            <button
+              type="button"
+              onClick={() => setShowNameModal(true)}
+              className="group/name flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-950/5 hover:bg-amber-950/10 transition-colors cursor-pointer"
+              title="Yazar Adını Değiştir"
+            >
               <Feather className="w-3.5 h-3.5 text-amber-800 shrink-0" />
               <span className="font-serif font-bold text-amber-950 text-xs sm:text-sm tracking-tight whitespace-nowrap">
-                Mert Kip <span className="font-normal text-amber-900/60 hidden sm:inline">• Yazar Odası</span>
+                {authorName} <span className="font-normal text-amber-900/60 hidden sm:inline">• Yazar Odası</span>
               </span>
-            </div>
+              <Edit className="w-3 h-3 text-amber-800/50 group-hover/name:text-amber-800 shrink-0" />
+            </button>
 
             {/* Şifre Değiştir & Kilitle / Çıkış butonları */}
             <div className="flex items-center gap-1 bg-[#ece3d4]/60 border border-[#d8c8b4] rounded-lg p-0.5">
@@ -1062,28 +1148,24 @@ export default function WriterPage() {
                 Rafları ve Kitapları Düzenle
               </h1>
               <p className="font-serif italic text-xs text-[#7c604a] mt-1">
-                Kilidi açarak kitapları sürükleyip raflar arasında sıralayabilirsiniz.
+                Raf ekleyin, adlandırın; kilidi açarak rafları ve kitapları sürükleyip sıralayın.
               </p>
             </div>
 
             <ShelfOrganizer
               articles={published}
-              onOrderChange={(newPublished) => {
-                const combined = [
-                  ...newPublished,
-                  ...articles.filter((a) => a.isDraft)
-                ];
-                setArticles(combined);
-              }}
+              shelves={shelves}
               onEditArticle={handleEditArticle}
               onDeleteArticle={handleDelete}
-              onSaveOrder={async (newPublished) => {
-                const combined = [
-                  ...newPublished,
-                  ...articles.filter((a) => a.isDraft)
-                ];
+              onAddShelf={handleAddShelf}
+              onRenameShelf={handleRenameShelf}
+              onSaveLayout={async (newShelves, newPublished) => {
+                const combined = [...newPublished, ...articles.filter((a) => a.isDraft)];
+                await saveShelves(newShelves);
                 await saveArticlesOrder(combined);
-                setNotice("Yeni raf sıralaması kaydedildi!");
+                setShelves(newShelves);
+                setArticles(combined.map((item, idx) => ({ ...item, order: idx })));
+                setNotice("Raf düzeni kaydedildi!");
                 setTimeout(() => setNotice(null), 3000);
               }}
             />
@@ -1125,6 +1207,12 @@ export default function WriterPage() {
         onTexturedChange={setTextured}
         coverImage={coverImage}
         onCoverImageChange={setCoverImage}
+        coverImageTransform={coverImageTransform}
+        onCoverImageTransformChange={setCoverImageTransform}
+        shelves={shelves}
+        shelfId={resolvedShelfId}
+        onShelfChange={setShelfId}
+        onAddShelf={handleAddShelf}
         musicTitle={musicTitle}
         onMusicTitleChange={setMusicTitle}
         musicArtist={musicArtist}
@@ -1199,6 +1287,14 @@ export default function WriterPage() {
         onCancel={() => setDeleteTarget(null)}
       />
 
+      {/* Yazar Adı Değiştirme Modalı */}
+      <AuthorNameModal
+        isOpen={showNameModal}
+        currentName={authorName}
+        onClose={() => setShowNameModal(false)}
+        onSave={handleSaveAuthorName}
+      />
+
       {/* Yazar Şifresi Değiştirme Modalı */}
       <ChangePasswordModal
         isOpen={showPasswordModal}
@@ -1240,7 +1336,7 @@ export default function WriterPage() {
                   >
                     <img
                       src={profileImage || "/textures/mert_kip.jpg"}
-                      alt="Mert Kip"
+                      alt={authorName}
                       className="w-full h-full object-cover object-top"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -1248,7 +1344,18 @@ export default function WriterPage() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-serif font-bold text-amber-950 text-sm">Mert Kip</h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setShowNameModal(true);
+                      }}
+                      className="font-serif font-bold text-amber-950 text-sm flex items-center gap-1 cursor-pointer"
+                      title="Yazar Adını Değiştir"
+                    >
+                      {authorName}
+                      <Edit className="w-3 h-3 text-amber-800/60" />
+                    </button>
                     <p className="font-serif text-[11px] text-amber-900/60 italic">Yazar Odası</p>
                   </div>
                 </div>

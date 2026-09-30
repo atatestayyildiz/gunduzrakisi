@@ -56,19 +56,9 @@ export function SiteMusicPlayer({
             src: a.musicUrl!,
           };
         });
+        // Önbellek bayat olabilir (müzik sonradan kaldırılmış olabilir); otomatik açma/çalma
+        // kararı yalnızca taze veriyle verilir.
         setTracks(quickList);
-        const hasSpecific = Boolean(
-          currentArticleId &&
-          cachedArticles.some(
-            (a) => a.id === currentArticleId && !a.isDraft && a.musicUrl && extractYouTubeId(a.musicUrl)
-          )
-        );
-        if (hasSpecific) {
-          setAutoPlay(true);
-          setTimeout(() => {
-            if (!isDrawerOpenRef.current) setIsOpen(true);
-          }, 500);
-        }
       }
     }
 
@@ -125,27 +115,14 @@ export function SiteMusicPlayer({
 
         setAutoPlay(hasSpecificMusic);
 
-        if (list.length > 0) {
-          if (currentArticleId) {
-            if (hasSpecificMusic) {
-              setTimeout(() => {
-                if (!isDrawerOpenRef.current) {
-                  setIsOpen(true);
-                }
-              }, 600);
-            } else {
-              setTimeout(() => {
-                if (!isDrawerOpenRef.current) {
-                  setIsOpen(true);
-                  setTimeout(() => {
-                    if (!isDrawerOpenRef.current) {
-                      setIsOpen(false);
-                    }
-                  }, 2200);
-                }
-              }, 600);
+        // Yalnızca yazının kendi şarkısı varsa oynatıcı otomatik açılır; yoksa kapalı kalır
+        // (kullanıcı "Müzik" kulakçığından elle açabilir).
+        if (list.length > 0 && currentArticleId && hasSpecificMusic) {
+          setTimeout(() => {
+            if (!isDrawerOpenRef.current) {
+              setIsOpen(true);
             }
-          }
+          }, 600);
         }
       } catch (err) {
         console.warn("loadTracks error:", err);

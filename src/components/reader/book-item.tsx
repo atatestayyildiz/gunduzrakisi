@@ -55,6 +55,7 @@ export const BookItem = ({ article, size, isTopLiked = false }: BookItemProps) =
             textColor={article.textColor}
             textured={article.textured}
             coverImage={article.coverImage}
+            coverImageTransform={article.coverImageTransform}
             heightRatio={effectiveHeightRatio}
             isTopLiked={isTopLiked}
             width={{

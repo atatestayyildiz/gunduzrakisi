@@ -1,0 +1,258 @@
+"use client";
+
+import React, { useEffect, useLayoutEffect, useRef } from "react";
+import { BookCover } from "@/components/ui/book";
+import { CoverImageTransform } from "@/lib/types";
+import { Move, ZoomIn, ZoomOut, RotateCcw, Check, X } from "lucide-react";
+
+export const DEFAULT_COVER_TRANSFORM: CoverImageTransform = { x: 0, y: 0, zoom: 1 };
+
+const PREVIEW_WIDTH = 240;
+const PREVIEW_HEIGHT = Math.round((PREVIEW_WIDTH * 60) / 49);
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
+const OFFSET_LIMIT = 100;
+
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+interface CoverImageEditorProps {
+  isOpen: boolean;
+  onClose: () => void;
+  coverImage: string;
+  transform?: CoverImageTransform;
+  onTransformChange: (t: CoverImageTransform) => void;
+  title: string;
+  variant: "simple" | "stripe";
+  coverColor: string;
+  textColor: string;
+  textured: boolean;
+}
+
+export const CoverImageEditor = ({
+  isOpen,
+  onClose,
+  coverImage,
+  transform,
+  onTransformChange,
+  title,
+  variant,
+  coverColor,
+  textColor,
+  textured,
+}: CoverImageEditorProps) => {
+  const t = transform || DEFAULT_COVER_TRANSFORM;
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ px: number; py: number; x: number; y: number } | null>(null);
+  const tRef = useRef(t);
+
+  // Görsel alanı yüksekliği: Çift renklide kapağın üst yarısı, yekparede tamamı
+  const imageAreaHeight = variant === "stripe" ? PREVIEW_HEIGHT / 2 : PREVIEW_HEIGHT;
+
+  const update = (patch: Partial<CoverImageTransform>) => {
+    const next = { ...tRef.current, ...patch };
+    onTransformChange({
+      x: clamp(next.x, -OFFSET_LIMIT, OFFSET_LIMIT),
+      y: clamp(next.y, -OFFSET_LIMIT, OFFSET_LIMIT),
+      zoom: clamp(next.zoom, ZOOM_MIN, ZOOM_MAX),
+    });
+  };
+  const updateRef = useRef(update);
+  useLayoutEffect(() => {
+    tRef.current = t;
+    updateRef.current = update;
+  });
+
+  // Tekerlek ile yakınlaştırma (pasif olmayan dinleyici, sayfa kaymasın)
+  useEffect(() => {
+    const el = surfaceRef.current;
+    if (!isOpen || !el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      updateRef.current({ zoom: tRef.current.zoom - e.deltaY * 0.0015 });
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !coverImage) return null;
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { px: e.clientX, py: e.clientY, x: t.x, y: t.y };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = dragRef.current;
+    if (!start) return;
+    update({
+      x: start.x + ((e.clientX - start.px) / PREVIEW_WIDTH) * 100,
+      y: start.y + ((e.clientY - start.py) / imageAreaHeight) * 100,
+    });
+  };
+
+  const handlePointerUp = () => {
+    dragRef.current = null;
+  };
+
+  const sliderClass = "w-full accent-amber-700 cursor-pointer";
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-xs" onClick={onClose} />
+
+      <div
+        className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto no-scrollbar rounded-2xl border-2 border-[#a87d29]/50 shadow-[0_20px_60px_rgba(0,0,0,0.92)]"
+        style={{ backgroundColor: "#f5ead8" }}
+      >
+        <div className="oak-shelf-front px-5 py-3.5 flex items-center justify-between border-b-2 border-[#241307]">
+          <h2 className="font-serif font-bold text-base text-amber-100 tracking-wide flex items-center gap-2">
+            <Move className="w-4 h-4 text-amber-300" />
+            Kapak Görselini Ayarla
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-amber-200 hover:text-white bg-[#241307]/80 border border-[#a87d29]/40 cursor-pointer"
+            title="Kapat"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          <p className="text-[11px] font-serif italic text-[#6e5036] text-center">
+            Görseli sürükleyerek taşıyın, fare tekerleği veya kaydırıcı ile büyütüp küçültün.
+          </p>
+
+          {/* Canlı önizleme + sürükleme yüzeyi */}
+          <div className="flex justify-center">
+            <div
+              className="relative rounded-l-md rounded-r shadow-[0_10px_30px_rgba(0,0,0,0.45)]"
+              style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }}
+            >
+              <BookCover
+                title={title || "Yazı Başlığı"}
+                variant={variant}
+                color={coverColor}
+                textColor={textColor}
+                textured={textured}
+                coverImage={coverImage}
+                coverImageTransform={t}
+                width={PREVIEW_WIDTH}
+              />
+              <div
+                ref={surfaceRef}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                className="absolute inset-x-0 top-0 z-30 cursor-grab active:cursor-grabbing touch-none border-2 border-dashed border-amber-300/70 rounded-l-md rounded-r"
+                style={{ height: imageAreaHeight }}
+                title="Sürükleyerek taşıyın"
+              />
+            </div>
+          </div>
+
+          {/* Kaydırıcılar */}
+          <div className="space-y-3 p-4 rounded-xl bg-white/60 border border-[#d8c7b4]">
+            <div>
+              <div className="flex items-center justify-between text-xs font-serif font-semibold text-[#4a2b13] mb-1">
+                <span className="flex items-center gap-1.5">
+                  <ZoomIn className="w-3.5 h-3.5 text-amber-800" /> Yakınlaştırma
+                </span>
+                <span className="text-amber-900/70">%{Math.round(t.zoom * 100)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => update({ zoom: t.zoom - 0.1 })}
+                  className="p-1 rounded-md bg-[#e8dccb] hover:bg-[#dccbb4] text-amber-900 cursor-pointer"
+                  title="Küçült"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <input
+                  type="range"
+                  min={ZOOM_MIN}
+                  max={ZOOM_MAX}
+                  step={0.01}
+                  value={t.zoom}
+                  onChange={(e) => update({ zoom: Number(e.target.value) })}
+                  className={sliderClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => update({ zoom: t.zoom + 0.1 })}
+                  className="p-1 rounded-md bg-[#e8dccb] hover:bg-[#dccbb4] text-amber-900 cursor-pointer"
+                  title="Büyüt"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-xs font-serif font-semibold text-[#4a2b13] mb-1">
+                <span>Sağa / Sola</span>
+                <span className="text-amber-900/70">{Math.round(t.x)}</span>
+              </div>
+              <input
+                type="range"
+                min={-OFFSET_LIMIT}
+                max={OFFSET_LIMIT}
+                step={0.5}
+                value={t.x}
+                onChange={(e) => update({ x: Number(e.target.value) })}
+                className={sliderClass}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-xs font-serif font-semibold text-[#4a2b13] mb-1">
+                <span>Yukarı / Aşağı</span>
+                <span className="text-amber-900/70">{Math.round(t.y)}</span>
+              </div>
+              <input
+                type="range"
+                min={-OFFSET_LIMIT}
+                max={OFFSET_LIMIT}
+                step={0.5}
+                value={t.y}
+                onChange={(e) => update({ y: Number(e.target.value) })}
+                className={sliderClass}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onTransformChange(DEFAULT_COVER_TRANSFORM)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#e8dccb] hover:bg-[#dccbb4] text-[#4a2b13] text-xs font-serif font-semibold border border-[#d2c0aa] cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Sıfırla
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-[2] flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-[#4d2810] via-[#753d16] to-[#3a1d0a] text-[#faedd9] text-xs font-serif font-bold border border-[#d4af37]/60 shadow-md cursor-pointer"
+            >
+              <Check className="w-3.5 h-3.5 text-amber-300" />
+              Tamam
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -13,16 +13,19 @@ import {
   query,
   orderBy
 } from "firebase/firestore";
-import { BookArticle, CategoryItem, MusicTrack } from "./types";
+import { BookArticle, CategoryItem, MusicTrack, ShelfItem } from "./types";
 import { INITIAL_ARTICLES, INITIAL_CATEGORIES } from "./initial-data";
+import { buildDefaultShelves } from "./shelf-utils";
 
 const LOCAL_STORAGE_ARTICLES_KEY = "gunduz_rakisi_articles_v5";
 const LOCAL_STORAGE_CATEGORIES_KEY = "gunduz_rakisi_categories_v5";
 const LOCAL_STORAGE_MUSIC_KEY = "gunduz_rakisi_music_tracks_v1";
+const LOCAL_STORAGE_SHELVES_KEY = "gunduz_rakisi_shelves_v1";
 
 let memoryArticlesCache: BookArticle[] | null = null;
 let memoryCategoriesCache: CategoryItem[] | null = null;
 let memoryTracksCache: MusicTrack[] | null = null;
+let memoryShelvesCache: ShelfItem[] | null = null;
 
 /**
  * Wraps a promise with a timeout so mobile cellular networks never hang indefinitely.
@@ -690,10 +693,11 @@ export async function getAuthorProfileImage(): Promise<string | null> {
 export async function saveAuthorProfileImage(dataUrl: string): Promise<void> {
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, "settings", "author_profile"), {
-        profileImage: dataUrl,
-        updatedAt: new Date().toISOString(),
-      });
+      await setDoc(
+        doc(db, "settings", "author_profile"),
+        { profileImage: dataUrl, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
     } catch (err) {
       console.error("Firestore author profile save error:", err);
     }
@@ -706,3 +710,160 @@ export async function saveAuthorProfileImage(dataUrl: string): Promise<void> {
 
 
 
+
+const LOCAL_STORAGE_AUTHOR_NAME_KEY = "gunduz_rakisi_author_name_v1";
+export const DEFAULT_AUTHOR_NAME = "Mert Kip";
+
+/**
+ * Yerel önbellekteki yazar adını senkron okur (ilk render için).
+ */
+export function getCachedAuthorNameSync(): string {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_AUTHOR_NAME_KEY);
+      if (stored && stored.trim()) return stored;
+    } catch {}
+  }
+  return DEFAULT_AUTHOR_NAME;
+}
+
+/**
+ * Yazar adını Firestore'dan getirir (LocalStorage yedekli).
+ */
+export async function getAuthorName(): Promise<string> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await withTimeout(getDoc(doc(db, "settings", "author_profile")), 2500);
+      const name = snap.exists() ? snap.data()?.displayName : null;
+      if (typeof name === "string" && name.trim()) {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_AUTHOR_NAME_KEY, name.trim());
+          } catch {}
+        }
+        return name.trim();
+      }
+    } catch (err) {
+      console.warn("Firestore author name fetch failed:", err);
+    }
+  }
+  return getCachedAuthorNameSync();
+}
+
+/**
+ * Yazar adını kaydeder (profil resmine dokunmadan birleştirir).
+ */
+export async function saveAuthorName(name: string): Promise<void> {
+  const clean = name.trim();
+  if (!clean) return;
+  if (isFirebaseConfigured && db) {
+    try {
+      await setDoc(
+        doc(db, "settings", "author_profile"),
+        { displayName: clean, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+    } catch (err) {
+      console.error("Firestore author name save error:", err);
+      throw err;
+    }
+  }
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_AUTHOR_NAME_KEY, clean);
+    } catch {}
+  }
+}
+
+function sortShelves(list: ShelfItem[]): ShelfItem[] {
+  return [...list].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+function writeShelvesLocal(list: ShelfItem[]) {
+  memoryShelvesCache = list;
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_SHELVES_KEY, JSON.stringify(list));
+    } catch {}
+  }
+}
+
+export function getCachedShelvesSync(): ShelfItem[] {
+  if (memoryShelvesCache && memoryShelvesCache.length > 0) return memoryShelvesCache;
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_SHELVES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as ShelfItem[];
+        if (parsed && parsed.length > 0) {
+          memoryShelvesCache = sortShelves(parsed);
+          return memoryShelvesCache;
+        }
+      }
+    } catch {}
+  }
+  return [];
+}
+
+/**
+ * Tüm rafları sırasıyla getirir. Hiç raf yoksa eski düzene (5'erli) uygun varsayılan raflar
+ * oluşturulur; bunun için yayınlanmış kitap sayısı verilmelidir.
+ */
+export async function getShelves(publishedCount: number): Promise<ShelfItem[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const snap = await withTimeout(getDocs(collection(db, "shelves")), 2500);
+      if (!snap.empty) {
+        const list: ShelfItem[] = [];
+        snap.forEach((d) => list.push({ ...d.data(), id: d.id } as ShelfItem));
+        const sorted = sortShelves(list);
+        writeShelvesLocal(sorted);
+        return sorted;
+      }
+      const toSeed = getCachedShelvesSync().length > 0 ? getCachedShelvesSync() : buildDefaultShelves(publishedCount);
+      for (const s of toSeed) {
+        try {
+          await setDoc(doc(db, "shelves", s.id), s);
+        } catch {}
+      }
+      writeShelvesLocal(toSeed);
+      return toSeed;
+    } catch (err) {
+      console.warn("Firestore shelves read error/timeout:", err);
+    }
+  }
+
+  const cached = getCachedShelvesSync();
+  if (cached.length > 0) return cached;
+  const defaults = buildDefaultShelves(publishedCount);
+  writeShelvesLocal(defaults);
+  return defaults;
+}
+
+/**
+ * Rafların tamamını (isim + sıra) kaydeder; listede olmayan raflar silinir.
+ */
+export async function saveShelves(shelves: ShelfItem[]): Promise<void> {
+  const normalized = shelves.map((s, idx) => ({ ...s, name: s.name.trim(), order: idx }));
+  const previous = getCachedShelvesSync();
+  writeShelvesLocal(normalized);
+
+  if (isFirebaseConfigured && db) {
+    for (const s of normalized) {
+      try {
+        await setDoc(doc(db, "shelves", s.id), s);
+      } catch (err) {
+        console.error("Firestore shelf save error:", err);
+      }
+    }
+    for (const old of previous) {
+      if (!normalized.some((s) => s.id === old.id)) {
+        try {
+          await deleteDoc(doc(db, "shelves", old.id));
+        } catch (err) {
+          console.error("Firestore shelf delete error:", err);
+        }
+      }
+    }
+  }
+}

@@ -1,14 +1,25 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { BookArticle, CategoryItem } from "@/lib/types";
-import { getArticles, getCategories, getCachedArticlesSync, getCachedCategoriesSync } from "@/lib/posts-service";
+import { BookArticle, CategoryItem, ShelfItem } from "@/lib/types";
+import {
+  getArticles,
+  getCategories,
+  getShelves,
+  getCachedArticlesSync,
+  getCachedCategoriesSync,
+  getCachedShelvesSync,
+} from "@/lib/posts-service";
+import { assignArticlesToShelves, buildDefaultShelves } from "@/lib/shelf-utils";
+import { useAuthorName } from "@/lib/use-author-name";
 import { BookshelfHeader } from "@/components/reader/bookshelf-header";
 import { Bookshelf } from "@/components/reader/bookshelf";
 
 export default function HomePage() {
   const [articles, setArticles] = useState<BookArticle[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [shelves, setShelves] = useState<ShelfItem[]>([]);
+  const authorName = useAuthorName();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchInContent, setSearchInContent] = useState<boolean>(false);
@@ -21,6 +32,7 @@ export default function HomePage() {
     if (cachedArts.length > 0) {
       setArticles(cachedArts);
       setCategories(cachedCats);
+      setShelves(getCachedShelvesSync());
       setLoading(false);
     }
 
@@ -33,6 +45,7 @@ export default function HomePage() {
         ]);
         setArticles(allArticles);
         setCategories(allCategories);
+        setShelves(await getShelves(allArticles.filter((a) => !a.isDraft).length));
       } catch (err) {
         console.warn("Background fetch failed:", err);
       } finally {
@@ -99,6 +112,22 @@ export default function HomePage() {
     return list;
   }, [publishedArticles, topLikedArticles, selectedCategory, searchQuery, searchInContent]);
 
+  // 4. Raf düzeni: tüm yayınlanmış kitaplar üzerinden hesaplanır, sonra filtreye göre süzülür
+  const shelfRows = useMemo(() => {
+    const effectiveShelves = shelves.length > 0 ? shelves : buildDefaultShelves(publishedArticles.length);
+    const layout = assignArticlesToShelves(
+      articles.filter((a) => !a.isDraft),
+      effectiveShelves
+    );
+    const visibleIds = new Set(filteredArticles.map((a) => a.id));
+    return effectiveShelves.map((shelf) => ({
+      shelf,
+      books: (layout.get(shelf.id) || []).filter((a) => visibleIds.has(a.id)),
+    }));
+  }, [articles, shelves, publishedArticles, filteredArticles]);
+
+  const filterActive = selectedCategory !== "all" || Boolean(searchQuery.trim());
+
   return (
     <div className="min-h-screen plaster-wall flex flex-col justify-between selection:bg-amber-800/20">
       {/* Top Section with Bookshelf Cornice Header & Bookshelf */}
@@ -126,9 +155,11 @@ export default function HomePage() {
             </div>
           ) : (
             <Bookshelf
-              articles={filteredArticles}
+              rows={shelfRows}
               topLikedIds={topLikedIds}
               searchActive={Boolean(searchQuery.trim())}
+              filterActive={filterActive}
+              totalPublished={publishedArticles.length}
             />
           )}
         </div>
@@ -137,7 +168,7 @@ export default function HomePage() {
       {/* Subtle Footer Note */}
       <footer className="w-full max-w-7xl mx-auto px-6 py-8 text-center border-t border-[#d8c8b4]/60">
         <div className="flex items-center justify-center text-xs text-[#7d5f47] font-serif">
-          <span>Gündüz Rakısı © {new Date().getFullYear()} — Mert Kip</span>
+          <span>Gündüz Rakısı © {new Date().getFullYear()} — {authorName}</span>
         </div>
       </footer>
     </div>

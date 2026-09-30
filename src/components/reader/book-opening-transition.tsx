@@ -6,6 +6,7 @@ import { BookArticle } from "@/lib/types";
 import { BookCover } from "@/components/ui/book";
 import { BookOpen, ArrowRight, X, Music, Heart, Eye } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
+import { useAuthorName } from "@/lib/use-author-name";
 import { getCleanExcerpt } from "@/lib/text-cleaner";
 
 interface BookOpeningTransitionProps {
@@ -33,6 +34,7 @@ export const BookOpeningTransition = ({
   >("initial");
 
   const [mounted, setMounted] = useState(false);
+  const authorName = useAuthorName();
 
   useEffect(() => {
     setMounted(true);
@@ -280,6 +282,7 @@ export const BookOpeningTransition = ({
                 textColor={article.textColor}
                 textured={article.textured}
                 coverImage={article.coverImage}
+                coverImageTransform={article.coverImageTransform}
               />
             </div>
 
@@ -295,7 +298,7 @@ export const BookOpeningTransition = ({
             >
               {/* Subtle vintage bookplate mark */}
               <div className="opacity-45 text-[11px] font-serif tracking-widest uppercase text-amber-950 font-bold">
-                Gündüz Rakısı • Mert Kip
+                Gündüz Rakısı • {authorName}
               </div>
               <div className="flex items-center justify-between opacity-40 text-[10px] font-serif italic text-amber-950 border-t border-amber-900/20 pt-3">
                 <span>Özel Ciltli Baskı</span>

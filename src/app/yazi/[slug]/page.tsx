@@ -20,6 +20,7 @@ import {
   Eye
 } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
+import { useAuthorName } from "@/lib/use-author-name";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -29,6 +30,7 @@ export default function ArticlePage({ params }: PageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
   const [article, setArticle] = useState<BookArticle | null>(null);
+  const authorName = useAuthorName();
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isAuthorAuthenticated, setIsAuthorAuthenticated] = useState(false);
@@ -221,7 +223,7 @@ export default function ArticlePage({ params }: PageProps) {
 
           {/* Author & Meta */}
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs sm:text-sm text-[#7d5f47] font-serif">
-            <span className="font-semibold text-[#3d2008]">Mert Kip</span>
+            <span className="font-semibold text-[#3d2008]">{authorName}</span>
             <span>•</span>
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 opacity-70" />
@@ -274,7 +276,7 @@ export default function ArticlePage({ params }: PageProps) {
         <div className="mt-14 pt-8 border-t border-[#d8c8b4] flex flex-col items-center sm:items-start gap-3">
           <div className="w-16 h-0.5 bg-amber-900/30" />
           <p className="font-serif italic text-base text-[#6b4c33]">
-            — Mert Kip, <span className="text-amber-950 font-medium">Gündüz Rakısı</span>
+            — {authorName}, <span className="text-amber-950 font-medium">Gündüz Rakısı</span>
           </p>
         </div>
 
@@ -290,7 +292,7 @@ export default function ArticlePage({ params }: PageProps) {
             >
               moonworks.com.tr
             </a>{" "}
-            tarafından Mert Kip&apos;in edebi yazıları için sevgiyle tasarlanıp kodlanmıştır.
+            tarafından {authorName}&apos;in edebi yazıları için sevgiyle tasarlanıp kodlanmıştır.
           </p>
         </footer>
       </article>

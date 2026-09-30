@@ -478,7 +478,7 @@ export const BookDrawer = ({
                     style={{
                       objectPosition: coverImagePosition(coverImageTransform),
                       transformOrigin: coverImagePosition(coverImageTransform),
-                      transform: `scale(${coverImageTransform?.zoom ?? 1})`,
+                      transform: `scale(${Math.max(1, coverImageTransform?.zoom ?? 1)})`,
                     }}
                   />
                 </div>

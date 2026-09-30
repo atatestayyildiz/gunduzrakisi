@@ -93,7 +93,7 @@ export const CoverImageLayer = ({
       style={{
         backgroundImage: `url('${src}')`,
         backgroundPosition: pos,
-        transform: `scale(${transform?.zoom ?? 1})`,
+        transform: `scale(${Math.max(1, transform?.zoom ?? 1)})`,
         transformOrigin: pos,
       }}
     />

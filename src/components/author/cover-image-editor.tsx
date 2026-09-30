@@ -10,7 +10,7 @@ export const DEFAULT_COVER_TRANSFORM: CoverImageTransform = { x: 0, y: 0, zoom: 
 
 const PREVIEW_WIDTH = 240;
 const PREVIEW_HEIGHT = Math.round((PREVIEW_WIDTH * 60) / 49);
-const ZOOM_MIN = 0.5;
+const ZOOM_MIN = 1; // %100 = görsel alanı tam doldurur; altına inilirse alanda boşluk açılır
 const ZOOM_MAX = 3;
 const OFFSET_LIMIT = 50; // background-position %0..%100 aralığına karşılık gelir
 

@@ -47,8 +47,8 @@ export interface MusicTrack {
 
 
 export interface CoverImageTransform {
-  x: number;    // Yatay kaydırma, görsel alanı genişliğinin yüzdesi (-100..100)
-  y: number;    // Dikey kaydırma, görsel alanı yüksekliğinin yüzdesi (-100..100)
+  x: number;    // Yatay kaydırma (-50..50); 0 = ortalı, + = görsel sağa
+  y: number;    // Dikey kaydırma (-50..50); 0 = ortalı, + = görsel aşağı
   zoom: number; // Ölçek (0.5..3), 1 = alanı tam kaplar
 }
 

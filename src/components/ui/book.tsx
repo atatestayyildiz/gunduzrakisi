@@ -67,7 +67,18 @@ export interface BookCoverProps {
   width?: number;
 }
 
-/** Kapak görselini konum/yakınlaştırma ayarıyla çizen katman */
+/**
+ * Kapak görselini konum/yakınlaştırma ayarıyla çizen katman.
+ * Görsel alanı "cover" ile doldurur; kaydırma background-position ile yapılır, böylece
+ * kırpılan kısımlar kaydırıldıkça görünür. Yakınlaştırma aynı noktayı merkez alır,
+ * bu sayede büyütülmüş görselin her kenarına ulaşılabilir.
+ */
+export const coverImagePosition = (t?: CoverImageTransform) => {
+  const x = 50 - (t?.x ?? 0);
+  const y = 50 - (t?.y ?? 0);
+  return `${x}% ${y}%`;
+};
+
 export const CoverImageLayer = ({
   src,
   transform,
@@ -75,14 +86,15 @@ export const CoverImageLayer = ({
   src: string;
   transform?: CoverImageTransform;
 }) => {
-  const t = transform || { x: 0, y: 0, zoom: 1 };
+  const pos = coverImagePosition(transform);
   return (
     <div
-      className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+      className="absolute inset-0 bg-cover bg-no-repeat pointer-events-none"
       style={{
         backgroundImage: `url('${src}')`,
-        transform: `translate(${t.x}%, ${t.y}%) scale(${t.zoom})`,
-        transformOrigin: "center",
+        backgroundPosition: pos,
+        transform: `scale(${transform?.zoom ?? 1})`,
+        transformOrigin: pos,
       }}
     />
   );

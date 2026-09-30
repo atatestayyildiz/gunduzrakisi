@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BookCover } from "@/components/ui/book";
 import { CoverImageTransform } from "@/lib/types";
 import { Move, ZoomIn, ZoomOut, RotateCcw, Check, X } from "lucide-react";
@@ -11,7 +12,7 @@ const PREVIEW_WIDTH = 240;
 const PREVIEW_HEIGHT = Math.round((PREVIEW_WIDTH * 60) / 49);
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
-const OFFSET_LIMIT = 100;
+const OFFSET_LIMIT = 50; // background-position %0..%100 aralığına karşılık gelir
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -44,6 +45,23 @@ export const CoverImageEditor = ({
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ px: number; py: number; x: number; y: number } | null>(null);
   const tRef = useRef(t);
+  // Görselin gerçek en/boy oranı (sürükleme hassasiyetini hesaplamak için)
+  const [imageAspect, setImageAspect] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !coverImage) return;
+    let alive = true;
+    const img = new Image();
+    img.onload = () => {
+      if (alive && img.naturalWidth && img.naturalHeight) {
+        setImageAspect(img.naturalWidth / img.naturalHeight);
+      }
+    };
+    img.src = coverImage;
+    return () => {
+      alive = false;
+    };
+  }, [isOpen, coverImage]);
 
   // Görsel alanı yüksekliği: Çift renklide kapağın üst yarısı, yekparede tamamı
   const imageAreaHeight = variant === "stripe" ? PREVIEW_HEIGHT / 2 : PREVIEW_HEIGHT;
@@ -90,12 +108,22 @@ export const CoverImageEditor = ({
     dragRef.current = { px: e.clientX, py: e.clientY, x: t.x, y: t.y };
   };
 
+  // Görselin alanı taşan kısmı (px): kaydırmanın %100'ü bu mesafeye denk gelir.
+  // Böylece fareyle kaç piksel çekilirse görsel de o kadar kayar.
+  const aspect = imageAspect ?? PREVIEW_WIDTH / imageAreaHeight;
+  const coverW = Math.max(PREVIEW_WIDTH, imageAreaHeight * aspect);
+  const coverH = Math.max(imageAreaHeight, PREVIEW_WIDTH / aspect);
+  const overflowX = t.zoom * coverW - PREVIEW_WIDTH;
+  const overflowY = t.zoom * coverH - imageAreaHeight;
+
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const start = dragRef.current;
     if (!start) return;
+    const dx = e.clientX - start.px;
+    const dy = e.clientY - start.py;
     update({
-      x: start.x + ((e.clientX - start.px) / PREVIEW_WIDTH) * 100,
-      y: start.y + ((e.clientY - start.py) / imageAreaHeight) * 100,
+      x: Math.abs(overflowX) > 1 ? start.x + (dx / overflowX) * 100 : start.x,
+      y: Math.abs(overflowY) > 1 ? start.y + (dy / overflowY) * 100 : start.y,
     });
   };
 
@@ -105,7 +133,8 @@ export const CoverImageEditor = ({
 
   const sliderClass = "w-full accent-amber-700 cursor-pointer";
 
-  return (
+  // Çekmece transform'lu olduğu için fixed pencere onun içine hapsolur; body'ye taşınır
+  return createPortal(
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xs" onClick={onClose} />
 
@@ -253,6 +282,7 @@ export const CoverImageEditor = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

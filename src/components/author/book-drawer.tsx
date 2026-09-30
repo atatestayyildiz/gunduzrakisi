@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Book } from "@/components/ui/book";
+import { Book, coverImagePosition } from "@/components/ui/book";
 import { CategoryItem, CoverImageTransform, ShelfItem } from "@/lib/types";
 import { CoverImageEditor, DEFAULT_COVER_TRANSFORM } from "./cover-image-editor";
 import { convertToWebP } from "@/lib/image-utils";
@@ -476,9 +476,9 @@ export const BookDrawer = ({
                     alt="Kapak Önizleme"
                     className="w-full h-full object-cover"
                     style={{
-                      transform: coverImageTransform
-                        ? `translate(${coverImageTransform.x}%, ${coverImageTransform.y}%) scale(${coverImageTransform.zoom})`
-                        : undefined,
+                      objectPosition: coverImagePosition(coverImageTransform),
+                      transformOrigin: coverImagePosition(coverImageTransform),
+                      transform: `scale(${coverImageTransform?.zoom ?? 1})`,
                     }}
                   />
                 </div>

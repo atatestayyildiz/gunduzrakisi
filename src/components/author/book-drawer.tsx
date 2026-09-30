@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Book, coverImagePosition } from "@/components/ui/book";
+import { Book, CoverImageLayer } from "@/components/ui/book";
 import { CategoryItem, CoverImageTransform, ShelfItem } from "@/lib/types";
 import { CoverImageEditor, DEFAULT_COVER_TRANSFORM } from "./cover-image-editor";
 import { convertToWebP } from "@/lib/image-utils";
@@ -471,16 +471,7 @@ export const BookDrawer = ({
               /* Image Preview Card */
               <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-[#d8c7b4]">
                 <div className="relative w-12 h-16 rounded-md overflow-hidden bg-[#2d1b0f] border border-[#a88d72] shrink-0 shadow-xs">
-                  <img
-                    src={coverImage}
-                    alt="Kapak Önizleme"
-                    className="w-full h-full object-cover"
-                    style={{
-                      objectPosition: coverImagePosition(coverImageTransform),
-                      transformOrigin: coverImagePosition(coverImageTransform),
-                      transform: `scale(${Math.max(1, coverImageTransform?.zoom ?? 1)})`,
-                    }}
-                  />
+                  <CoverImageLayer src={coverImage} transform={coverImageTransform} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-serif font-semibold text-[#3b200b] truncate">

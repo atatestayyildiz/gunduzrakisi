@@ -10,8 +10,11 @@ export const DEFAULT_COVER_TRANSFORM: CoverImageTransform = { x: 0, y: 0, zoom: 
 
 const PREVIEW_WIDTH = 240;
 const PREVIEW_HEIGHT = Math.round((PREVIEW_WIDTH * 60) / 49);
-const ZOOM_MIN = 1; // %100 = görsel alanı tam doldurur; altına inilirse alanda boşluk açılır
+// zoom 1 = görsel alanı tam doldurur (çubuğun ortası, 0).
+// Sağa doğru ZOOM_MAX'a kadar yakınlaşır; sola doğru görselin tamamı sığana kadar
+// (en az ZOOM_FLOOR'a kadar) uzaklaşır, boş kalan kenarlarda cilt rengi görünür.
 const ZOOM_MAX = 3;
+const ZOOM_FLOOR = 0.5;
 const OFFSET_LIMIT = 50; // background-position %0..%100 aralığına karşılık gelir
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -66,12 +69,28 @@ export const CoverImageEditor = ({
   // Görsel alanı yüksekliği: Çift renklide kapağın üst yarısı, yekparede tamamı
   const imageAreaHeight = variant === "stripe" ? PREVIEW_HEIGHT / 2 : PREVIEW_HEIGHT;
 
+  // Görselin alanı taşan kısmı (px): kaydırmanın %100'ü bu mesafeye denk gelir.
+  // Böylece fareyle kaç piksel çekilirse görsel de o kadar kayar.
+  const aspect = imageAspect ?? PREVIEW_WIDTH / imageAreaHeight;
+  const coverW = Math.max(PREVIEW_WIDTH, imageAreaHeight * aspect);
+  const coverH = Math.max(imageAreaHeight, PREVIEW_WIDTH / aspect);
+  // Görselin tamamının sığdığı ölçek (en fazla 1)
+  const containZoom = Math.min(PREVIEW_WIDTH / coverW, imageAreaHeight / coverH);
+  const zoomMin = Math.min(containZoom, ZOOM_FLOOR);
+
+  // Çubuk değeri (-100..100, orta 0) <-> zoom
+  const zoomFromSlider = (v: number) =>
+    v >= 0 ? 1 + (v / 100) * (ZOOM_MAX - 1) : 1 + (v / 100) * (1 - zoomMin);
+  const sliderFromZoom = (z: number) =>
+    z >= 1 ? ((z - 1) / (ZOOM_MAX - 1)) * 100 : ((z - 1) / (1 - zoomMin)) * 100;
+
   const update = (patch: Partial<CoverImageTransform>) => {
     const next = { ...tRef.current, ...patch };
     onTransformChange({
       x: clamp(next.x, -OFFSET_LIMIT, OFFSET_LIMIT),
       y: clamp(next.y, -OFFSET_LIMIT, OFFSET_LIMIT),
-      zoom: clamp(next.zoom, ZOOM_MIN, ZOOM_MAX),
+      zoom: clamp(next.zoom, zoomMin, ZOOM_MAX),
+      aspect: imageAspect ?? next.aspect,
     });
   };
   const updateRef = useRef(update);
@@ -108,11 +127,6 @@ export const CoverImageEditor = ({
     dragRef.current = { px: e.clientX, py: e.clientY, x: t.x, y: t.y };
   };
 
-  // Görselin alanı taşan kısmı (px): kaydırmanın %100'ü bu mesafeye denk gelir.
-  // Böylece fareyle kaç piksel çekilirse görsel de o kadar kayar.
-  const aspect = imageAspect ?? PREVIEW_WIDTH / imageAreaHeight;
-  const coverW = Math.max(PREVIEW_WIDTH, imageAreaHeight * aspect);
-  const coverH = Math.max(imageAreaHeight, PREVIEW_WIDTH / aspect);
   const overflowX = t.zoom * coverW - PREVIEW_WIDTH;
   const overflowY = t.zoom * coverH - imageAreaHeight;
   // Görsel alandan küçükken (taşma negatif) kaydırma yönü tersine döner;
@@ -136,6 +150,8 @@ export const CoverImageEditor = ({
   };
 
   const sliderClass = "w-full accent-amber-700 cursor-pointer";
+  const zoomSlider = Math.round(clamp(sliderFromZoom(t.zoom), -100, 100));
+  const zoomLabel = zoomSlider > 0 ? `+${zoomSlider}` : `${zoomSlider}`;
 
   // Çekmece transform'lu olduğu için fixed pencere onun içine hapsolur; body'ye taşınır
   return createPortal(
@@ -200,14 +216,14 @@ export const CoverImageEditor = ({
             <div>
               <div className="flex items-center justify-between text-xs font-serif font-semibold text-[#4a2b13] mb-1">
                 <span className="flex items-center gap-1.5">
-                  <ZoomIn className="w-3.5 h-3.5 text-amber-800" /> Yakınlaştırma
+                  <ZoomIn className="w-3.5 h-3.5 text-amber-800" /> Yakınlaştır / Uzaklaştır
                 </span>
-                <span className="text-amber-900/70">%{Math.round(t.zoom * 100)}</span>
+                <span className="text-amber-900/70">{zoomLabel}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => update({ zoom: t.zoom - 0.1 })}
+                  onClick={() => update({ zoom: zoomFromSlider(clamp(zoomSlider - 10, -100, 100)) })}
                   className="p-1 rounded-md bg-[#e8dccb] hover:bg-[#dccbb4] text-amber-900 cursor-pointer"
                   title="Küçült"
                 >
@@ -215,16 +231,16 @@ export const CoverImageEditor = ({
                 </button>
                 <input
                   type="range"
-                  min={ZOOM_MIN}
-                  max={ZOOM_MAX}
-                  step={0.01}
-                  value={t.zoom}
-                  onChange={(e) => update({ zoom: Number(e.target.value) })}
+                  min={-100}
+                  max={100}
+                  step={1}
+                  value={zoomSlider}
+                  onChange={(e) => update({ zoom: zoomFromSlider(Number(e.target.value)) })}
                   className={sliderClass}
                 />
                 <button
                   type="button"
-                  onClick={() => update({ zoom: t.zoom + 0.1 })}
+                  onClick={() => update({ zoom: zoomFromSlider(clamp(zoomSlider + 10, -100, 100)) })}
                   className="p-1 rounded-md bg-[#e8dccb] hover:bg-[#dccbb4] text-amber-900 cursor-pointer"
                   title="Büyüt"
                 >

@@ -49,7 +49,8 @@ export interface MusicTrack {
 export interface CoverImageTransform {
   x: number;    // Yatay kaydırma (-50..50); 0 = ortalı, + = görsel sağa
   y: number;    // Dikey kaydırma (-50..50); 0 = ortalı, + = görsel aşağı
-  zoom: number; // Ölçek (0.5..3), 1 = alanı tam kaplar
+  zoom: number; // Ölçek; 1 = alanı tam kaplar, <1 görselin tamamını göstermek için küçültür
+  aspect?: number; // Görselin en/boy oranı (genişlik/yükseklik); gerçek boyutlu küçültme için gerekir
 }
 
 export interface ShelfItem {

@@ -87,13 +87,32 @@ export const CoverImageLayer = ({
   transform?: CoverImageTransform;
 }) => {
   const pos = coverImagePosition(transform);
+  const zoom = transform?.zoom ?? 1;
+
+  // Oran biliniyorsa görsel gerçek boyutuyla ölçeklenir: "cover" boyutu × zoom.
+  // Böylece zoom < 1 iken görselin kırpılan kısımları da çerçeveye girer.
+  if (transform?.aspect) {
+    return (
+      <div className="absolute inset-0 pointer-events-none" style={{ containerType: "size" }}>
+        <div
+          className="absolute inset-0 bg-no-repeat"
+          style={{
+            backgroundImage: `url('${src}')`,
+            backgroundPosition: pos,
+            backgroundSize: `calc(${zoom} * max(100cqw, ${transform.aspect} * 100cqh)) auto`,
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="absolute inset-0 bg-cover bg-no-repeat pointer-events-none"
       style={{
         backgroundImage: `url('${src}')`,
         backgroundPosition: pos,
-        transform: `scale(${Math.max(1, transform?.zoom ?? 1)})`,
+        transform: `scale(${Math.max(1, zoom)})`,
         transformOrigin: pos,
       }}
     />

@@ -322,12 +322,12 @@ export default function WriterPage() {
   const defaultShelfId = () => shelves[shelves.length - 1]?.id || "";
   const resolvedShelfId = shelves.some((s) => s.id === shelfId) ? shelfId : defaultShelfId();
 
-  // Kitabın rafındaki son sıra (raf değiştiyse veya yeni kitapsa en sona eklenir)
+  // Yeni (veya rafı değişen / taslaktan yayınlanan) kitap rafın en soluna yerleşir, eskiler sağa kayar
   const nextOrderFor = (targetShelfId: string) => {
     const existing = editingId ? articles.find((a) => a.id === editingId) : undefined;
     if (existing && existing.shelfId === targetShelfId && !existing.isDraft) return existing.order ?? 0;
-    const maxOrder = articles.reduce((m, a) => Math.max(m, a.order ?? 0), -1);
-    return maxOrder + 1;
+    const minOrder = articles.reduce((m, a) => Math.min(m, a.order ?? 0), 0);
+    return minOrder - 1;
   };
 
   const drafts = articles.filter((a) => a.isDraft);

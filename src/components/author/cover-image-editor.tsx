@@ -115,6 +115,10 @@ export const CoverImageEditor = ({
   const coverH = Math.max(imageAreaHeight, PREVIEW_WIDTH / aspect);
   const overflowX = t.zoom * coverW - PREVIEW_WIDTH;
   const overflowY = t.zoom * coverH - imageAreaHeight;
+  // Görsel alandan küçükken (taşma negatif) kaydırma yönü tersine döner;
+  // kaydırıcılar bu işaretle çevrilir ki sağa çekmek her zaman görseli sağa götürsün.
+  const dirX = overflowX < -1 ? -1 : 1;
+  const dirY = overflowY < -1 ? -1 : 1;
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const start = dragRef.current;
@@ -232,15 +236,15 @@ export const CoverImageEditor = ({
             <div>
               <div className="flex items-center justify-between text-xs font-serif font-semibold text-[#4a2b13] mb-1">
                 <span>Sağa / Sola</span>
-                <span className="text-amber-900/70">{Math.round(t.x)}</span>
+                <span className="text-amber-900/70">{Math.round(t.x * dirX)}</span>
               </div>
               <input
                 type="range"
                 min={-OFFSET_LIMIT}
                 max={OFFSET_LIMIT}
                 step={0.5}
-                value={t.x}
-                onChange={(e) => update({ x: Number(e.target.value) })}
+                value={t.x * dirX}
+                onChange={(e) => update({ x: Number(e.target.value) * dirX })}
                 className={sliderClass}
               />
             </div>
@@ -248,15 +252,15 @@ export const CoverImageEditor = ({
             <div>
               <div className="flex items-center justify-between text-xs font-serif font-semibold text-[#4a2b13] mb-1">
                 <span>Yukarı / Aşağı</span>
-                <span className="text-amber-900/70">{Math.round(t.y)}</span>
+                <span className="text-amber-900/70">{Math.round(t.y * dirY)}</span>
               </div>
               <input
                 type="range"
                 min={-OFFSET_LIMIT}
                 max={OFFSET_LIMIT}
                 step={0.5}
-                value={t.y}
-                onChange={(e) => update({ y: Number(e.target.value) })}
+                value={t.y * dirY}
+                onChange={(e) => update({ y: Number(e.target.value) * dirY })}
                 className={sliderClass}
               />
             </div>

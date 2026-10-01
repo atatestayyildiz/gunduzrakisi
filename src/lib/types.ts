@@ -14,6 +14,7 @@ export interface BookArticle {
   textured: boolean;
   coverImage?: string;
   coverImageTransform?: CoverImageTransform; // Kapak görselinin konum/yakınlaştırma ayarı
+  titleScale?: number; // Kapak başlığı punto çarpanı (1 = varsayılan)
   shelfId?: string; // Kitabın durduğu raf (ShelfItem.id)
   musicTitle?: string;
   musicArtist?: string;

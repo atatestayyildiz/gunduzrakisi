@@ -26,6 +26,7 @@ interface CoverImageEditorProps {
   transform?: CoverImageTransform;
   onTransformChange: (t: CoverImageTransform) => void;
   title: string;
+  titleScale?: number;
   variant: "simple" | "stripe";
   coverColor: string;
   textColor: string;
@@ -39,6 +40,7 @@ export const CoverImageEditor = ({
   transform,
   onTransformChange,
   title,
+  titleScale,
   variant,
   coverColor,
   textColor,
@@ -196,6 +198,7 @@ export const CoverImageEditor = ({
                 textured={textured}
                 coverImage={coverImage}
                 coverImageTransform={t}
+                titleScale={titleScale}
                 width={PREVIEW_WIDTH}
               />
               <div

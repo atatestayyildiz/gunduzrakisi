@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BookArticle, ShelfItem } from "@/lib/types";
 import { BookItem } from "./book-item";
 import { assignShelfBookSizes } from "@/lib/book-size-utils";
@@ -59,7 +60,7 @@ export const Bookshelf = ({
         <div className="oak-side-pillar w-6 sm:w-10 md:w-12 shrink-0 border-r-2 border-[#190901] shadow-[inset_-8px_0_15px_rgba(0,0,0,0.6)] relative z-20" />
 
         {/* Center Cabinet Interior (Arka Panel + Raflar) */}
-        <div className="oak-backboard flex-1 flex flex-col relative">
+        <div className="oak-backboard flex-1 min-w-0 flex flex-col relative">
           {/* Inner ambient shadows cast by side pillars and top crown */}
           <div className="absolute inset-0 shadow-[inset_0_12px_25px_rgba(0,0,0,0.7),inset_15px_0_20px_rgba(0,0,0,0.5),inset_-15px_0_20px_rgba(0,0,0,0.5)] pointer-events-none z-10" />
 
@@ -103,19 +104,23 @@ export const Bookshelf = ({
                 }}
               />
 
-              {/* Books Row: exactly 5 slots per shelf, height tuned to 1.12x of book */}
-              <div className="relative z-20 hover:z-50 w-full px-2 sm:px-6 md:px-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2 sm:gap-x-4 items-end justify-items-center h-[196px] sm:h-[210px] md:h-[228px] lg:h-[248px] xl:h-[270px]">
-                {shelfBooks.length > 0 ? (
-                  assignShelfBookSizes(shelfBooks, shelfIndex).map(({ book, size }, idx) => (
-                    <BookItem
-                      key={book.id}
-                      article={book}
-                      index={idx}
-                      size={size}
-                      isTopLiked={topLikedIds?.has(book.id)}
-                    />
-                  ))
-                ) : (
+              {/* Books Row: 5 kitaplık raf; masaüstünde 5 sütun, daha dar ekranlarda yatay kaydırmalı */}
+              {shelfBooks.length > 0 ? (
+                <ScrollableShelfRow>
+                  {assignShelfBookSizes(shelfBooks, shelfIndex).map(({ book, size }, idx) => (
+                    <div key={book.id} className="shrink-0 h-full snap-start lg:contents">
+                      <BookItem
+                        article={book}
+                        index={idx}
+                        size={size}
+                        isTopLiked={topLikedIds?.has(book.id)}
+                      />
+                    </div>
+                  ))}
+                </ScrollableShelfRow>
+              ) : (
+              <div className="relative z-20 w-full px-2 sm:px-6 md:px-8 grid grid-cols-1 items-end justify-items-center h-[168px] sm:h-[210px] md:h-[228px] lg:h-[248px] xl:h-[270px]">
+                {(
                   /* Boş Raf Durumu: Ekran boş kalmaz, ahşap raf atmosferi ve yönlendirme korunur */
                   <div className="col-span-full h-full flex flex-col items-center justify-center text-center px-4 py-4">
                     {shelfIndex === 0 && noMatch && searchActive ? (
@@ -159,6 +164,7 @@ export const Bookshelf = ({
                   </div>
                 )}
               </div>
+              )}
 
               {/* Heavy Solid Oak Shelf Beam (Ara Raf) */}
               <div className="relative z-10 w-full mt-0">
@@ -218,3 +224,68 @@ export const Bookshelf = ({
     </main>
   );
 };
+
+/**
+ * Dar ekranlarda (lg altı) rafı yatay kaydırılabilir yapar: taşan kitabın sırtı kenarda
+ * görünür, kenarlardaki minik oklarla veya parmakla kaydırılır. lg ve üstünde 5 sütunlu ızgara.
+ */
+function ScrollableShelfRow({ children }: { children: React.ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const updateArrows = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateArrows();
+    window.addEventListener("resize", updateArrows);
+    return () => window.removeEventListener("resize", updateArrows);
+  }, [updateArrows]);
+
+  const scrollByPage = (dir: -1 | 1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+
+  const arrowClass =
+    "lg:hidden absolute top-1/2 -translate-y-1/2 z-40 w-7 h-7 rounded-full flex items-center justify-center bg-[#1a0b02]/80 border border-amber-500/50 text-amber-200 shadow-[0_2px_8px_rgba(0,0,0,0.7)] active:scale-95 transition-opacity cursor-pointer";
+
+  return (
+    <div className="relative z-20 hover:z-50 w-full">
+      <div
+        ref={scrollRef}
+        onScroll={updateArrows}
+        className="w-full px-2 sm:px-6 md:px-8 flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-px-2 sm:scroll-px-6 md:scroll-px-8 no-scrollbar lg:grid lg:grid-cols-5 lg:overflow-visible lg:gap-x-4 items-end lg:justify-items-center h-[168px] sm:h-[210px] md:h-[228px] lg:h-[248px] xl:h-[270px]"
+      >
+        {children}
+      </div>
+
+      {canLeft && (
+        <button
+          type="button"
+          onClick={() => scrollByPage(-1)}
+          className={`${arrowClass} left-1`}
+          aria-label="Rafı sola kaydır"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      )}
+      {canRight && (
+        <button
+          type="button"
+          onClick={() => scrollByPage(1)}
+          className={`${arrowClass} right-1`}
+          aria-label="Rafı sağa kaydır"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+}

@@ -56,10 +56,12 @@ export const BookItem = ({ article, size, isTopLiked = false }: BookItemProps) =
             textured={article.textured}
             coverImage={article.coverImage}
             coverImageTransform={article.coverImageTransform}
+            titleScale={article.titleScale}
             heightRatio={effectiveHeightRatio}
             isTopLiked={isTopLiked}
             width={{
-              sm: Math.round(140 * scale),
+              // Mobilde 2 kitap tam + 3. kitabın sırtı görünecek genişlik (raf yatay kayar)
+              sm: Math.round(112 * scale),
               md: Math.round(165 * scale),
               lg: Math.round(180 * scale),
               xl: Math.round(196 * scale),

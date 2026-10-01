@@ -283,6 +283,7 @@ export const BookOpeningTransition = ({
                 textured={article.textured}
                 coverImage={article.coverImage}
                 coverImageTransform={article.coverImageTransform}
+                titleScale={article.titleScale}
               />
             </div>
 

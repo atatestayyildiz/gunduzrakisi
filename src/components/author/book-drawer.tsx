@@ -34,6 +34,7 @@ import {
   Move,
   Library,
   Plus,
+  Type,
 } from "lucide-react";
 import { RakiGlass } from "@/components/icons/raki-glass";
 
@@ -64,6 +65,8 @@ interface BookDrawerProps {
   onCoverImageChange: (img: string) => void;
   coverImageTransform?: CoverImageTransform;
   onCoverImageTransformChange: (t: CoverImageTransform | undefined) => void;
+  titleScale: number;
+  onTitleScaleChange: (v: number) => void;
   shelves: ShelfItem[];
   shelfId: string;
   onShelfChange: (id: string) => void;
@@ -122,6 +125,8 @@ export const BookDrawer = ({
   onCoverImageChange,
   coverImageTransform,
   onCoverImageTransformChange,
+  titleScale,
+  onTitleScaleChange,
   shelves,
   shelfId,
   onShelfChange,
@@ -316,6 +321,7 @@ export const BookDrawer = ({
                 textured={textured}
                 coverImage={coverImage}
                 coverImageTransform={coverImageTransform}
+                titleScale={titleScale}
                 width={160}
               />
             </div>
@@ -327,6 +333,44 @@ export const BookDrawer = ({
                 <span>{sips} yudumda biter</span>
               </span>
             </div>
+          </div>
+
+          {/* Başlık Puntosu */}
+          <div className="p-4 rounded-2xl bg-[#f5ead8]/95 border border-[#c5ab8d] shadow-[inset_0_1px_3px_rgba(255,255,255,0.8),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-serif font-semibold text-[#4a2b13] flex items-center gap-1.5">
+                <Type className="w-4 h-4 text-amber-800" />
+                <span>Başlık Puntosu</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-serif text-amber-900/70">%{Math.round(titleScale * 100)}</span>
+                {titleScale !== 1 && (
+                  <button
+                    type="button"
+                    onClick={() => onTitleScaleChange(1)}
+                    className="text-[11px] font-serif text-amber-800 underline hover:text-amber-950 cursor-pointer"
+                  >
+                    Varsayılan
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-serif text-[10px] text-[#6e5036]">A</span>
+              <input
+                type="range"
+                min={0.5}
+                max={1.3}
+                step={0.05}
+                value={titleScale}
+                onChange={(e) => onTitleScaleChange(Number(e.target.value))}
+                className="w-full accent-amber-700 cursor-pointer"
+              />
+              <span className="font-serif text-base text-[#6e5036]">A</span>
+            </div>
+            <p className="text-[10px] font-serif italic text-[#7a593e]">
+              Uzun başlıklar kapağı kaplıyorsa puntoyu küçültün; önizleme canlı güncellenir.
+            </p>
           </div>
 
           {/* Cilt Tipi (Variant) */}
@@ -995,6 +1039,7 @@ export const BookDrawer = ({
           )
         }
         title={title}
+        titleScale={titleScale}
         variant={variant}
         coverColor={coverColor}
         textColor={textColor}

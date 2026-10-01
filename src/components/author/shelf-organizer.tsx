@@ -490,6 +490,7 @@ export const ShelfOrganizer = ({
                           textured={book.textured}
                           coverImage={book.coverImage}
                           coverImageTransform={book.coverImageTransform}
+                          titleScale={book.titleScale}
                           heightRatio={book.heightRatio || 1}
                           width={130}
                           isTopLiked={topLikedIds.has(book.id)}

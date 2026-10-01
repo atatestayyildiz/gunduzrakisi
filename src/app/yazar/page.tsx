@@ -96,6 +96,7 @@ export default function WriterPage() {
   const [coverImage, setCoverImage] = useState("");
   const [coverImageTransform, setCoverImageTransform] = useState<CoverImageTransform | undefined>(undefined);
   const [shelfId, setShelfId] = useState("");
+  const [titleScale, setTitleScale] = useState(1);
   const [musicTitle, setMusicTitle] = useState("");
   const [musicArtist, setMusicArtist] = useState("");
   const [musicUrl, setMusicUrl] = useState("");
@@ -346,6 +347,7 @@ export default function WriterPage() {
     setTextured(art.textured);
     setCoverImage(art.coverImage || "");
     setCoverImageTransform(art.coverImageTransform);
+    setTitleScale(art.titleScale ?? 1);
     setShelfId(art.shelfId && shelves.some((s) => s.id === art.shelfId) ? art.shelfId : defaultShelfId());
     setMusicTitle(art.musicTitle || "");
     setMusicArtist(art.musicArtist || "");
@@ -409,6 +411,7 @@ export default function WriterPage() {
     setDate("");
     setCoverImage("");
     setCoverImageTransform(undefined);
+    setTitleScale(1);
     setShelfId(defaultShelfId());
     setMusicTitle("");
     setMusicArtist("");
@@ -456,6 +459,7 @@ export default function WriterPage() {
       textured,
       coverImage: coverImage || undefined,
       coverImageTransform: coverImage ? coverImageTransform : undefined,
+      titleScale: titleScale !== 1 ? titleScale : undefined,
       shelfId: resolvedShelfId || undefined,
       heightRatio: editingId ? (articles.find((a) => a.id === editingId)?.heightRatio ?? randomHeightRatio()) : randomHeightRatio(),
       musicTitle: musicTitle || undefined,
@@ -529,6 +533,7 @@ export default function WriterPage() {
       textured,
       coverImage: coverImage || undefined,
       coverImageTransform: coverImage ? coverImageTransform : undefined,
+      titleScale: titleScale !== 1 ? titleScale : undefined,
       shelfId: resolvedShelfId || undefined,
       heightRatio: editingId ? (articles.find((a) => a.id === editingId)?.heightRatio ?? randomHeightRatio()) : randomHeightRatio(),
       musicTitle: musicTitle || undefined,
@@ -1209,6 +1214,8 @@ export default function WriterPage() {
         onCoverImageChange={setCoverImage}
         coverImageTransform={coverImageTransform}
         onCoverImageTransformChange={setCoverImageTransform}
+        titleScale={titleScale}
+        onTitleScaleChange={setTitleScale}
         shelves={shelves}
         shelfId={resolvedShelfId}
         onShelfChange={setShelfId}

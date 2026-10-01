@@ -46,6 +46,7 @@ export interface BookProps {
   textured?: boolean;
   coverImage?: string;
   coverImageTransform?: CoverImageTransform;
+  titleScale?: number;
   className?: string;
   scale?: number;
   heightRatio?: number;
@@ -62,6 +63,7 @@ export interface BookCoverProps {
   textured?: boolean;
   coverImage?: string;
   coverImageTransform?: CoverImageTransform;
+  titleScale?: number;
   isTopLiked?: boolean;
   className?: string;
   width?: number;
@@ -128,6 +130,7 @@ export const BookCover = ({
   textured = false,
   coverImage,
   coverImageTransform,
+  titleScale = 1,
   isTopLiked = false,
   className,
   width,
@@ -136,11 +139,19 @@ export const BookCover = ({
   const _illustration = illustration ? illustration : DefaultIllustration;
   const resolvedTextColor = textColor || (variant === "stripe" && !coverImage ? "var(--ds-gray-1000)" : "#ffffff");
 
-  const fontSizeTitle = width
+  const baseTitleSize = width
     ? variant === "simple"
       ? Math.max(12, Math.round(width * 0.115))
       : Math.max(11, Math.round(width * 0.102))
     : undefined;
+  // Yazarın belirlediği başlık puntosu çarpanı (uzun başlıklar kapağı kaplamasın diye)
+  const fontSizeTitle = baseTitleSize ? Math.max(7, Math.round(baseTitleSize * titleScale)) : undefined;
+  const titleFontSize = (cqwBase: number) =>
+    fontSizeTitle
+      ? `${fontSizeTitle}px`
+      : titleScale !== 1
+      ? `calc(${cqwBase}cqw * ${titleScale})`
+      : undefined;
 
   return (
     <div
@@ -164,7 +175,7 @@ export const BookCover = ({
               className="leading-[1.2em] tracking-[-.02em] font-semibold text-balance drop-shadow-md text-[11cqw]"
               style={{
                 color: resolvedTextColor,
-                fontSize: fontSizeTitle ? `${fontSizeTitle}px` : undefined,
+                fontSize: titleFontSize(11),
               }}
             >
               {title}
@@ -199,7 +210,7 @@ export const BookCover = ({
                 className="leading-[1.25em] tracking-[-.02em] text-balance font-semibold text-[10.5cqw]"
                 style={{
                   color: resolvedTextColor,
-                  fontSize: fontSizeTitle ? `${fontSizeTitle}px` : undefined,
+                  fontSize: titleFontSize(10.5),
                 }}
               >
                 {title}
@@ -253,7 +264,7 @@ export const BookCover = ({
                 )}
                 style={{
                   color: resolvedTextColor,
-                  fontSize: fontSizeTitle ? `${fontSizeTitle}px` : undefined,
+                  fontSize: titleFontSize(variant === "simple" ? 12 : 10.5),
                 }}
               >
                 {title}
@@ -314,6 +325,7 @@ export const Book = ({
   textured = false,
   coverImage,
   coverImageTransform,
+  titleScale = 1,
   className,
   scale = 1,
   heightRatio = 1,
@@ -383,6 +395,7 @@ export const Book = ({
             textured={textured}
             coverImage={coverImage}
             coverImageTransform={coverImageTransform}
+            titleScale={titleScale}
             isTopLiked={isTopLiked}
             width={_width}
           />

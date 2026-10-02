@@ -4,7 +4,13 @@ import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookArticle } from "@/lib/types";
-import { getArticles, getCachedArticlesSync, toggleArticleLike, incrementArticleViews } from "@/lib/posts-service";
+import {
+  getArticles,
+  getCachedArticlesSync,
+  toggleArticleLike,
+  incrementArticleViews,
+  getArticleCounts,
+} from "@/lib/posts-service";
 import { matchesArticleSlug } from "@/lib/slug-utils";
 import { ReadingProgress } from "@/components/reader/reading-progress";
 import { SiteMusicPlayer } from "@/components/reader/site-music-player";
@@ -69,6 +75,12 @@ export default function ArticlePage({ params }: PageProps) {
           setArticle(found);
           setLikesCount(found.likes || 0);
           setViewsCount(found.views || 0);
+          // Liste zaman aşımıyla önbellekten gelmiş olabilir; sayaçlar doğrudan Firestore'dan tazelenir
+          const fresh = await getArticleCounts(found.id);
+          if (fresh) {
+            setLikesCount(fresh.likes);
+            setViewsCount(fresh.views);
+          }
           if (typeof window !== "undefined") {
             const liked = localStorage.getItem(`gunduz_rakisi_liked_${found.id}`);
             setHasLiked(liked === "true");

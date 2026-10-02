@@ -10,6 +10,7 @@ import {
   deleteDoc,
   updateDoc,
   increment,
+  deleteField,
   query,
   orderBy
 } from "firebase/firestore";
@@ -176,13 +177,46 @@ export async function getArticles(): Promise<BookArticle[]> {
 /**
  * Saves or updates an article.
  */
-export async function saveArticle(article: BookArticle): Promise<void> {
-  const cleaned = cleanForFirestore(article);
+// Yazar tarafından kaldırılabilen opsiyonel alanlar: boşsa Firestore'dan silinir
+const OPTIONAL_ARTICLE_FIELDS: (keyof BookArticle)[] = [
+  "excerpt",
+  "textColor",
+  "coverImage",
+  "coverImageTransform",
+  "titleScale",
+  "shelfId",
+  "musicTitle",
+  "musicArtist",
+  "musicUrl",
+  "musicCover",
+  "heightRatio",
+  "isDraft",
+  "fontFamily",
+  "fontSize",
+  "createdAt",
+  "scheduledAt",
+];
 
+/**
+ * Yazının içerik alanlarını Firestore'a yazar. Okunma (views) ve beğeni (likes) sayaçları
+ * yalnızca ziyaretçi artışlarıyla (increment) değişir; yazar kaydı bunların üzerine YAZMAZ,
+ * aksi halde yazar odası açıkken gelen okumalar/beğeniler silinir.
+ */
+function articleContentPayload(article: BookArticle): Record<string, unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { likes, views, ...rest } = article;
+  const payload: Record<string, unknown> = cleanForFirestore(rest);
+  for (const key of OPTIONAL_ARTICLE_FIELDS) {
+    if (payload[key] === undefined) payload[key] = deleteField();
+  }
+  return payload;
+}
+
+export async function saveArticle(article: BookArticle): Promise<void> {
   // Update Firestore if available
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, "articles", article.id), cleaned);
+      await setDoc(doc(db, "articles", article.id), articleContentPayload(article), { merge: true });
     } catch (err) {
       console.error("Firestore save error:", err);
       throw err;
@@ -260,6 +294,8 @@ export async function toggleArticleLike(articleId: string, shouldLike: boolean):
       await updateDoc(artRef, {
         likes: increment(delta),
       });
+      const fresh = await getArticleCounts(articleId);
+      if (fresh) return fresh.likes;
     } catch (err) {
       console.error("Firestore toggleArticleLike error:", err);
     }
@@ -309,6 +345,8 @@ export async function incrementArticleViews(articleId: string): Promise<number> 
       await updateDoc(artRef, {
         views: increment(1),
       });
+      const fresh = await getArticleCounts(articleId);
+      if (fresh) return fresh.views;
     } catch (err) {
       console.error("Firestore incrementArticleViews error:", err);
     }
@@ -362,7 +400,12 @@ export async function saveArticlesOrder(orderedArticles: BookArticle[]): Promise
   if (isFirebaseConfigured && db) {
     for (const item of updated) {
       try {
-        await setDoc(doc(db, "articles", item.id), cleanForFirestore(item), { merge: true });
+        // Yalnız sıra ve raf yazılır; sayaçlar ve diğer alanlar korunur
+        await setDoc(
+          doc(db, "articles", item.id),
+          cleanForFirestore({ order: item.order, shelfId: item.shelfId }),
+          { merge: true }
+        );
       } catch (err) {
         console.error("Firestore order save error:", err);
       }
@@ -865,5 +908,46 @@ export async function saveShelves(shelves: ShelfItem[]): Promise<void> {
         }
       }
     }
+  }
+}
+
+/**
+ * Bir yazının okunma/beğeni sayılarını doğrudan Firestore'dan (önbelleksiz) okur ve
+ * yerel önbelleği günceller. Firestore yoksa veya erişilemezse null döner.
+ */
+export async function getArticleCounts(
+  articleId: string
+): Promise<{ views: number; likes: number } | null> {
+  if (!isFirebaseConfigured || !db) return null;
+  try {
+    const snap = await withTimeout(getDoc(doc(db, "articles", articleId)), 6000);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    const counts = { views: Number(data.views) || 0, likes: Number(data.likes) || 0 };
+    patchCachedCounts(articleId, counts);
+    return counts;
+  } catch (err) {
+    console.warn("getArticleCounts failed:", err);
+    return null;
+  }
+}
+
+function patchCachedCounts(articleId: string, counts: { views: number; likes: number }) {
+  if (memoryArticlesCache) {
+    const idx = memoryArticlesCache.findIndex((a) => a.id === articleId);
+    if (idx >= 0) memoryArticlesCache[idx] = { ...memoryArticlesCache[idx], ...counts };
+  }
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_ARTICLES_KEY);
+      if (stored) {
+        const list = JSON.parse(stored) as BookArticle[];
+        const idx = list.findIndex((a) => a.id === articleId);
+        if (idx >= 0) {
+          list[idx] = { ...list[idx], ...counts };
+          localStorage.setItem(LOCAL_STORAGE_ARTICLES_KEY, JSON.stringify(list));
+        }
+      }
+    } catch {}
   }
 }
